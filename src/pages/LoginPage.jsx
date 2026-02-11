@@ -15,15 +15,28 @@ function LoginPage() {
     event.preventDefault();
     setSubmitting(true);
     setError('');
-    const { error: signInError } = await signIn(email, password);
+    try {
+      const { error: signInError } = await signIn(email, password);
 
-    if (signInError) {
-      setError(signInError.message);
+      if (signInError) {
+        const isNetworkError =
+          signInError.message?.toLowerCase().includes('failed to fetch') ||
+          signInError.message?.toLowerCase().includes('network');
+
+        setError(
+          isNetworkError
+            ? 'Unable to reach Supabase. Check VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY and confirm your internet connection.'
+            : signInError.message,
+        );
+        return;
+      }
+
+      navigate(location.state?.from?.pathname || '/admin', { replace: true });
+    } catch {
+      setError('Unable to reach Supabase. Check VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY and confirm your internet connection.');
+    } finally {
       setSubmitting(false);
-      return;
     }
-
-    navigate(location.state?.from?.pathname || '/admin', { replace: true });
   }
 
   return (
