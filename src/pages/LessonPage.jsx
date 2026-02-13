@@ -13,7 +13,10 @@ function LessonPage() {
       try {
         const data = await fetchLessonById(id);
         setLesson(data);
-        await incrementLessonViews(data.id, data.views_count);
+
+        incrementLessonViews(data.id, data.views_count).catch((viewError) => {
+          console.warn('Failed to increment lesson views:', viewError);
+        });
       } catch (err) {
         setError(err.message);
       }

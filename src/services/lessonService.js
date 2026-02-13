@@ -23,12 +23,37 @@ export async function fetchLessonById(id) {
 }
 
 export async function incrementLessonViews(id, currentViews = 0) {
+  const rpcPayloads = [{ lesson_id: id }, { id }, { p_lesson_id: id }];
+
+  for (const params of rpcPayloads) {
+    const { error } = await supabase.rpc('increment_lesson_views', params);
+
+    if (!error) return true;
+
+    // Function signature not found in schema cache; try alternate arg names.
+    if (error.code === 'PGRST202') {
+      continue;
+    }
+
+    // Don't break lesson rendering if write permission is missing.
+    if (error.code === '42501') {
+      return false;
+    }
+
+    throw error;
+  }
+
+  // Fallback path for environments where RPC is not deployed yet.
   const { error } = await supabase
     .from('lessons')
     .update({ views_count: currentViews + 1 })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('status', 'published');
 
-  if (error) throw error;
+  if (!error) return true;
+
+  if (error.code === '42501') return false;
+  throw error;
 }
 
 export async function fetchAllLessons() {
