@@ -14,7 +14,7 @@ function LessonPage() {
         const data = await fetchLessonById(id);
         setLesson(data);
 
-        incrementLessonViews(data.id, data.views_count).catch((viewError) => {
+        incrementLessonViews(data.id).catch((viewError) => {
           console.warn('Failed to increment lesson views:', viewError);
         });
       } catch (err) {

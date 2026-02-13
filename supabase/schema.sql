@@ -49,6 +49,14 @@ create table if not exists public.media (
   created_at timestamptz not null default now()
 );
 
+
+create table if not exists public.lesson_views (
+  id uuid primary key default uuid_generate_v4(),
+  lesson_id uuid not null references public.lessons(id) on delete cascade,
+  visitor_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
 -- Auto-update updated_at field
 create or replace function public.set_updated_at()
 returns trigger as $$
@@ -64,19 +72,28 @@ before update on public.lessons
 for each row execute procedure public.set_updated_at();
 
 
-create or replace function public.increment_lesson_views(lesson_id uuid)
-returns void
-language sql
+create or replace function public.bump_lesson_views_from_log()
+returns trigger
+language plpgsql
 security definer
 set search_path = public
 as $$
+begin
   update public.lessons
   set views_count = coalesce(views_count, 0) + 1
-  where id = lesson_id
+  where id = new.lesson_id
     and status = 'published';
+
+  return new;
+end;
 $$;
 
-grant execute on function public.increment_lesson_views(uuid) to anon, authenticated;
+drop trigger if exists trg_lesson_views_bump_counter on public.lesson_views;
+create trigger trg_lesson_views_bump_counter
+after insert on public.lesson_views
+for each row execute procedure public.bump_lesson_views_from_log();
+
+
 
 -- RLS and security policies
 alter table public.profiles enable row level security;
@@ -85,6 +102,7 @@ alter table public.tags enable row level security;
 alter table public.lessons enable row level security;
 alter table public.lesson_tags enable row level security;
 alter table public.media enable row level security;
+alter table public.lesson_views enable row level security;
 
 create or replace function public.is_admin(user_id uuid)
 returns boolean
@@ -111,6 +129,19 @@ for select using (true);
 
 create policy "Public can view media" on public.media
 for select using (true);
+
+
+create policy "Public can insert lesson views" on public.lesson_views
+for insert with check (true);
+
+create policy "Admins can view lesson views" on public.lesson_views
+for select using (public.is_admin(auth.uid()));
+
+create policy "Admins manage lesson views" on public.lesson_views
+for update using (public.is_admin(auth.uid())) with check (public.is_admin(auth.uid()));
+
+create policy "Admins can delete lesson views" on public.lesson_views
+for delete using (public.is_admin(auth.uid()));
 
 -- Admin-only write policies
 create policy "Admins manage lessons" on public.lessons
