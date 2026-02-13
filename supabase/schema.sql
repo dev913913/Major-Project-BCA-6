@@ -63,6 +63,21 @@ create trigger trg_lessons_updated_at
 before update on public.lessons
 for each row execute procedure public.set_updated_at();
 
+
+create or replace function public.increment_lesson_views(lesson_id uuid)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.lessons
+  set views_count = coalesce(views_count, 0) + 1
+  where id = lesson_id
+    and status = 'published';
+$$;
+
+grant execute on function public.increment_lesson_views(uuid) to anon, authenticated;
+
 -- RLS and security policies
 alter table public.profiles enable row level security;
 alter table public.categories enable row level security;
