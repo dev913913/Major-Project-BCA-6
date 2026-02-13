@@ -13,7 +13,7 @@ function LessonPage() {
       try {
         const data = await fetchLessonById(id);
         setLesson(data);
-        await incrementLessonViews(data.id, data.views_count);
+        await incrementLessonViews(data.id);
       } catch (err) {
         setError(err.message);
       }

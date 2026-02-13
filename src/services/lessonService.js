@@ -22,11 +22,10 @@ export async function fetchLessonById(id) {
   return data;
 }
 
-export async function incrementLessonViews(id, currentViews = 0) {
-  const { error } = await supabase
-    .from('lessons')
-    .update({ views_count: currentViews + 1 })
-    .eq('id', id);
+export async function incrementLessonViews(id) {
+  const { error } = await supabase.rpc('increment_lesson_views', {
+    lesson_id: id,
+  });
 
   if (error) throw error;
 }
