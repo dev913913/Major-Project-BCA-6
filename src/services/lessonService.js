@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient';
 export async function fetchPublishedLessons() {
   const { data, error } = await supabase
     .from('lessons')
-    .select('id, title, featured_image, status, views_count, created_at, categories(name, difficulty), lesson_tags(tags(name))')
+    .select('id, title, content, featured_image, status, views_count, created_at, updated_at, categories(name, difficulty), lesson_tags(tags(name))')
     .eq('status', 'published')
     .order('created_at', { ascending: false });
 
