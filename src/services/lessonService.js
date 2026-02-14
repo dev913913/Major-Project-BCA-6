@@ -22,9 +22,9 @@ export async function fetchLessonById(id) {
   return data;
 }
 
-export async function incrementLessonViews(id) {
+export async function incrementLessonViews(lessonId) {
   const { error } = await supabase.rpc('increment_lesson_views', {
-    lesson_id: id,
+    lesson_id: lessonId,
   });
 
   if (error) throw error;
