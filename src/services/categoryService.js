@@ -1,9 +1,17 @@
 import { supabase } from './supabaseClient';
 
 export async function fetchCategories() {
-  const { data, error } = await supabase.from('categories').select('*').order('name', { ascending: true });
+  const { data, error } = await supabase
+    .from('categories')
+    .select('id, name, difficulty, lessons(count)')
+    .order('name', { ascending: true });
+
   if (error) throw error;
-  return data ?? [];
+
+  return (data ?? []).map((category) => ({
+    ...category,
+    lesson_count: category.lessons?.[0]?.count ?? 0,
+  }));
 }
 
 export async function createCategory(payload) {
