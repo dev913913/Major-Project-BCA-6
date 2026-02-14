@@ -33,7 +33,7 @@ export async function incrementLessonViews(lessonId) {
 export async function fetchAllLessons() {
   const { data, error } = await supabase
     .from('lessons')
-    .select('id, title, status, updated_at, categories(name)')
+    .select('id, title, content, code_snippets, featured_image, category_id, status, views_count, created_at, updated_at, categories(name)')
     .order('updated_at', { ascending: false });
 
   if (error) throw error;

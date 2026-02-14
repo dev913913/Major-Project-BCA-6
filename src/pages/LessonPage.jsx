@@ -1,7 +1,35 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import { fetchLessonById, incrementLessonViews } from '../services/lessonService';
+
+function normalizeCodeSnippets(rawSnippets) {
+  if (!Array.isArray(rawSnippets)) return [];
+
+  return rawSnippets
+    .map((snippet, index) => {
+      if (typeof snippet === 'string') {
+        return {
+          id: `snippet-${index}`,
+          code: snippet,
+          language: 'javascript',
+          title: `Code Snippet ${index + 1}`,
+        };
+      }
+
+      if (snippet && typeof snippet === 'object') {
+        return {
+          id: snippet.id ?? `snippet-${index}`,
+          code: snippet.code ?? snippet.content ?? '',
+          language: snippet.language ?? snippet.lang ?? 'javascript',
+          title: snippet.title ?? snippet.name ?? `Code Snippet ${index + 1}`,
+        };
+      }
+
+      return null;
+    })
+    .filter((snippet) => snippet?.code);
+}
 
 function LessonPage() {
   const { id } = useParams();
@@ -22,6 +50,8 @@ function LessonPage() {
     loadLesson();
   }, [id]);
 
+  const codeSnippets = useMemo(() => normalizeCodeSnippets(lesson?.code_snippets), [lesson?.code_snippets]);
+
   if (error) return <p className="text-red-600">{error}</p>;
   if (!lesson) return <p className="text-slate-600">Loading lesson...</p>;
 
@@ -36,7 +66,20 @@ function LessonPage() {
           </span>
         ))}
       </div>
+
       <MarkdownRenderer content={lesson.content} />
+
+      {codeSnippets.length > 0 && (
+        <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <h2 className="text-xl font-semibold">Code Snippets</h2>
+          {codeSnippets.map((snippet) => (
+            <div key={snippet.id} className="space-y-2">
+              <p className="text-sm font-medium text-slate-600">{snippet.title}</p>
+              <MarkdownRenderer content={`\`\`\`${snippet.language}\n${snippet.code}\n\`\`\``} />
+            </div>
+          ))}
+        </section>
+      )}
     </article>
   );
 }
