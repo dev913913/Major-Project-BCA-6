@@ -4,6 +4,7 @@ import LessonCard from '../components/LessonCard';
 import { JsonLd, useSeo } from '../components/Seo';
 import { fetchPublishedLessons } from '../services/lessonService';
 import { fetchCategories } from '../services/categoryService';
+import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
 
 function HomePage() {
   const [lessons, setLessons] = useState([]);
@@ -24,7 +25,10 @@ function HomePage() {
         setLessons(lessonData);
         setCategories(categoryData);
       })
-      .catch((err) => setError(err.message ?? 'Failed to load homepage data.'))
+      .catch((err) => {
+        reportError('HomePage data load', err);
+        setError(friendlyErrorMessage('Unable to load content right now. Please try again.'));
+      })
       .finally(() => setLoading(false));
   }, []);
 

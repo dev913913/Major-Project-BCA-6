@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSeo } from '../components/Seo';
 import { fetchCategories } from '../services/categoryService';
+import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
 
 function CategoriesPage() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useSeo({
     title: 'Categories | ProgLearn by Dev Kumar',
@@ -15,7 +17,13 @@ function CategoriesPage() {
   });
 
   useEffect(() => {
-    fetchCategories().then(setCategories).finally(() => setLoading(false));
+    fetchCategories()
+      .then(setCategories)
+      .catch((err) => {
+        reportError('CategoriesPage load', err);
+        setError(friendlyErrorMessage('Unable to load categories right now. Please try again.'));
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   return (
@@ -24,6 +32,8 @@ function CategoriesPage() {
         <h1 className="text-4xl font-black">Categories</h1>
         <p className="mt-2 text-slate-600">Explore learning paths organized by topic.</p>
       </header>
+
+      {error && <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">{error}</p>}
 
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
