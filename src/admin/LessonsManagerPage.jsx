@@ -6,6 +6,7 @@ import {
   updateLesson,
 } from '../services/lessonService';
 import { fetchCategories } from '../services/categoryService';
+import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
 
 const initialForm = {
   title: '',
@@ -67,7 +68,8 @@ function LessonsManagerPage() {
       setLessons(lessonList);
       setCategories(categoryList);
     } catch (err) {
-      setError(err.message ?? 'Failed to load lessons.');
+      reportError('Admin lessons load', err);
+      setError(friendlyErrorMessage('Unable to load lessons right now. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -117,7 +119,8 @@ function LessonsManagerPage() {
       setEditingId(null);
       await loadData();
     } catch (err) {
-      setError(err.message ?? 'Failed to save lesson.');
+      reportError('Admin lesson save', err);
+      setError(friendlyErrorMessage('Unable to save lesson right now. Please try again.'));
     }
   }
 
@@ -143,7 +146,8 @@ function LessonsManagerPage() {
       }
       await loadData();
     } catch (err) {
-      setError(err.message ?? 'Failed to delete lesson.');
+      reportError('Admin lesson delete', err);
+      setError(friendlyErrorMessage('Unable to delete lesson right now. Please try again.'));
     }
   }
 
@@ -153,7 +157,8 @@ function LessonsManagerPage() {
       await updateLesson(lesson.id, { status: nextStatus });
       await loadData();
     } catch (err) {
-      setError(err.message ?? 'Failed to update status.');
+      reportError('Admin lesson status update', err);
+      setError(friendlyErrorMessage('Unable to update lesson status right now. Please try again.'));
     }
   }
 

@@ -5,6 +5,7 @@ import {
   fetchCategories,
   updateCategory,
 } from '../services/categoryService';
+import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
 
 const initialForm = { name: '', difficulty: 'beginner' };
 
@@ -22,7 +23,8 @@ function CategoriesManagerPage() {
       const data = await fetchCategories();
       setCategories(data);
     } catch (err) {
-      setError(err.message ?? 'Failed to load categories.');
+      reportError('Admin categories load', err);
+      setError(friendlyErrorMessage('Unable to load categories right now. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -46,7 +48,8 @@ function CategoriesManagerPage() {
       setForm(initialForm);
       await loadCategories();
     } catch (err) {
-      setError(err.message ?? 'Failed to save category.');
+      reportError('Admin category save', err);
+      setError(friendlyErrorMessage('Unable to save category right now. Please try again.'));
     }
   }
 
@@ -124,7 +127,8 @@ function CategoriesManagerPage() {
                           await deleteCategory(category.id);
                           await loadCategories();
                         } catch (err) {
-                          setError(err.message ?? 'Failed to delete category.');
+                          reportError('Admin category delete', err);
+                          setError(friendlyErrorMessage('Unable to delete category right now. Please try again.'));
                         }
                       }}
                     >

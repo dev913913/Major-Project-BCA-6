@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -19,21 +20,15 @@ function LoginPage() {
       const { error: signInError } = await signIn(email, password);
 
       if (signInError) {
-        const isNetworkError =
-          signInError.message?.toLowerCase().includes('failed to fetch') ||
-          signInError.message?.toLowerCase().includes('network');
-
-        setError(
-          isNetworkError
-            ? 'Unable to reach Supabase. Check VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY and confirm your internet connection.'
-            : signInError.message,
-        );
+        reportError('LoginPage sign in', signInError);
+        setError(friendlyErrorMessage('Login failed. Please check your credentials and try again.'));
         return;
       }
 
       navigate(location.state?.from?.pathname || '/admin', { replace: true });
-    } catch {
-      setError('Unable to reach Supabase. Check VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY and confirm your internet connection.');
+    } catch (err) {
+      reportError('LoginPage sign in unexpected', err);
+      setError(friendlyErrorMessage('Login failed. Please try again.'));
     } finally {
       setSubmitting(false);
     }
