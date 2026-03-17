@@ -4,6 +4,7 @@ import MarkdownRenderer from '../components/MarkdownRenderer';
 import LessonCard from '../components/LessonCard';
 import { JsonLd, useSeo } from '../components/Seo';
 import { fetchLessonById, fetchPublishedLessons, incrementLessonViews } from '../services/lessonService';
+import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
 
 function normalizeCodeSnippets(rawSnippets) {
   if (!Array.isArray(rawSnippets)) return [];
@@ -61,7 +62,8 @@ function LessonPage() {
             .slice(0, 3),
         );
       } catch (err) {
-        setError(err.message ?? 'Failed to load lesson.');
+        reportError('LessonPage load', err);
+        setError(friendlyErrorMessage('We could not open this lesson right now. Please try again.'));
       }
     }
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchAllLessons } from '../services/lessonService';
 import { fetchCategories } from '../services/categoryService';
+import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
 
 const STATUS_COLORS = {
   published: 'bg-emerald-500',
@@ -27,7 +28,8 @@ function DashboardPage() {
       setCategories(Array.isArray(categoryData) ? categoryData : []);
       setLastUpdated(new Date());
     } catch (err) {
-      setError(err.message ?? 'Failed to load dashboard stats.');
+      reportError('Dashboard stats load', err);
+      setError(friendlyErrorMessage('Unable to load dashboard right now. Please try again.'));
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import LessonCard from '../components/LessonCard';
 import { useSeo } from '../components/Seo';
 import { fetchPublishedLessons } from '../services/lessonService';
+import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
 
 function LessonsPage() {
   const [lessons, setLessons] = useState([]);
@@ -20,7 +21,10 @@ function LessonsPage() {
   useEffect(() => {
     fetchPublishedLessons()
       .then(setLessons)
-      .catch((err) => setError(err.message ?? 'Failed to load lessons.'))
+      .catch((err) => {
+        reportError('LessonsPage load', err);
+        setError(friendlyErrorMessage('Unable to load lessons right now. Please try again.'));
+      })
       .finally(() => setLoading(false));
   }, []);
 
