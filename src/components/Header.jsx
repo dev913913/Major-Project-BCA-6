@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const navItem = ({ isActive }) =>
@@ -7,6 +7,7 @@ const navItem = ({ isActive }) =>
 
 function Header() {
   const { user, isAdmin, signOut } = useAuth();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -16,6 +17,12 @@ function Header() {
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  async function handleSignOut() {
+    await signOut();
+    setMobileOpen(false);
+    navigate('/', { replace: true });
+  }
 
   return (
     <header className={`sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur transition ${scrolled ? 'shadow-sm' : ''}`}>
@@ -55,7 +62,7 @@ function Header() {
               Login
             </NavLink>
           ) : (
-            <button type="button" className="rounded-lg bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-700" onClick={signOut}>
+            <button type="button" className="rounded-lg bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-700" onClick={handleSignOut}>
               Logout
             </button>
           )}
@@ -77,6 +84,15 @@ function Header() {
             <NavLink to="/admin" onClick={() => setMobileOpen(false)} className="block text-sm font-medium text-slate-700">
               Admin
             </NavLink>
+          )}
+          {!user ? (
+            <NavLink to="/login" onClick={() => setMobileOpen(false)} className="block text-sm font-medium text-indigo-600">
+              Login
+            </NavLink>
+          ) : (
+            <button type="button" onClick={handleSignOut} className="block text-sm font-medium text-slate-700">
+              Logout
+            </button>
           )}
         </nav>
       )}
