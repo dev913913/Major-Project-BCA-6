@@ -58,6 +58,7 @@ VITE_SUPABASE_ANON_KEY=<your-anon-key>
 1. Open Supabase Dashboard → SQL Editor.
 2. Run the full SQL from:
    - `supabase/schema.sql`
+3. This schema now seeds a full **12-lesson JavaScript beginner course** (published), so it appears on the site immediately after execution.
 
 ### Create your first admin
 1. Supabase Dashboard → Authentication → Users → **Add user**.
