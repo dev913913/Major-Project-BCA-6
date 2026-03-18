@@ -97,43 +97,56 @@ as $$
 $$;
 
 -- Public read policies
+drop policy if exists "Public can view published lessons" on public.lessons;
 create policy "Public can view published lessons" on public.lessons
 for select using (status = 'published' or public.is_admin(auth.uid()));
 
+drop policy if exists "Public can view categories" on public.categories;
 create policy "Public can view categories" on public.categories
 for select using (true);
 
+drop policy if exists "Public can view tags" on public.tags;
 create policy "Public can view tags" on public.tags
 for select using (true);
 
+drop policy if exists "Public can view lesson tags" on public.lesson_tags;
 create policy "Public can view lesson tags" on public.lesson_tags
 for select using (true);
 
+drop policy if exists "Public can view media" on public.media;
 create policy "Public can view media" on public.media
 for select using (true);
 
 -- Admin-only write policies
+drop policy if exists "Admins manage lessons" on public.lessons;
 create policy "Admins manage lessons" on public.lessons
 for all using (public.is_admin(auth.uid())) with check (public.is_admin(auth.uid()));
 
+drop policy if exists "Admins manage categories" on public.categories;
 create policy "Admins manage categories" on public.categories
 for all using (public.is_admin(auth.uid())) with check (public.is_admin(auth.uid()));
 
+drop policy if exists "Admins manage tags" on public.tags;
 create policy "Admins manage tags" on public.tags
 for all using (public.is_admin(auth.uid())) with check (public.is_admin(auth.uid()));
 
+drop policy if exists "Admins manage lesson tags" on public.lesson_tags;
 create policy "Admins manage lesson tags" on public.lesson_tags
 for all using (public.is_admin(auth.uid())) with check (public.is_admin(auth.uid()));
 
+drop policy if exists "Admins manage media" on public.media;
 create policy "Admins manage media" on public.media
 for all using (public.is_admin(auth.uid())) with check (public.is_admin(auth.uid()));
 
+drop policy if exists "Users can view own profile" on public.profiles;
 create policy "Users can view own profile" on public.profiles
 for select using (auth.uid() = id or public.is_admin(auth.uid()));
 
+drop policy if exists "Users update own profile" on public.profiles;
 create policy "Users update own profile" on public.profiles
 for update using (auth.uid() = id or public.is_admin(auth.uid()));
 
+drop policy if exists "Allow profile insert on signup" on public.profiles;
 create policy "Allow profile insert on signup" on public.profiles
 for insert with check (auth.uid() = id);
 
@@ -142,15 +155,19 @@ insert into storage.buckets (id, name, public)
 values ('lesson-media', 'lesson-media', true)
 on conflict (id) do nothing;
 
+drop policy if exists "Public read lesson media" on storage.objects;
 create policy "Public read lesson media" on storage.objects
 for select using (bucket_id = 'lesson-media');
 
+drop policy if exists "Admins upload lesson media" on storage.objects;
 create policy "Admins upload lesson media" on storage.objects
 for insert with check (bucket_id = 'lesson-media' and public.is_admin(auth.uid()));
 
+drop policy if exists "Admins update lesson media" on storage.objects;
 create policy "Admins update lesson media" on storage.objects
 for update using (bucket_id = 'lesson-media' and public.is_admin(auth.uid()));
 
+drop policy if exists "Admins delete lesson media" on storage.objects;
 create policy "Admins delete lesson media" on storage.objects
 for delete using (bucket_id = 'lesson-media' and public.is_admin(auth.uid()));
 
