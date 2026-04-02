@@ -1,6 +1,6 @@
-# ProgLearn CMS
+# Codev CMS
 
-ProgLearn CMS is a full-stack lessons platform for programming content built with React, Tailwind CSS, Supabase Auth/Database/Storage, and Prism.js highlighting.
+Codev CMS is a full-stack lessons platform for programming content built with React, Tailwind CSS, Supabase Auth/Database/Storage, and Prism.js highlighting.
 
 ## 1) Use it directly in GitHub Codespaces (online)
 

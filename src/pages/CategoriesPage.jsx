@@ -10,8 +10,8 @@ function CategoriesPage() {
   const [error, setError] = useState('');
 
   useSeo({
-    title: 'Categories | ProgLearn by Dev Kumar',
-    description: 'Browse programming topics by category on ProgLearn by Dev Kumar.',
+    title: 'Categories | Codev by Dev Kumar',
+    description: 'Browse programming topics by category on Codev by Dev Kumar.',
     type: 'website',
     url: typeof window !== 'undefined' ? window.location.href : undefined,
   });
