@@ -131,6 +131,7 @@ git push origin <your-branch>
 4. Add environment variables:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
+5. Keep `vercel.json` in repo so all routes rewrite to `index.html` (prevents 404 on refresh for `/lessons`, `/categories`, `/lesson/:id`, `/admin/*`).
 
 ### Supabase (Backend)
 - Keep Row Level Security enabled.
