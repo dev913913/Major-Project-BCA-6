@@ -12,7 +12,7 @@ function LessonsPage() {
   const [activeCategory, setActiveCategory] = useState('all');
 
   useSeo({
-    title: 'Explore Lessons | ProgLearn by Dev Kumar',
+    title: 'Explore Lessons | Codev by Dev Kumar',
     description: 'Curated programming lessons by Dev Kumar with practical examples and modern explanations.',
     type: 'website',
     url: typeof window !== 'undefined' ? window.location.href : undefined,

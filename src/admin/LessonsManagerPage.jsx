@@ -168,36 +168,45 @@ function LessonsManagerPage() {
 
       {error && <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <form onSubmit={handleSubmit} className="space-y-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="bg-gradient-to-r from-indigo-600 via-violet-600 to-blue-500 px-5 py-4 text-white">
+          <h2 className="text-lg font-semibold">{isEditing ? 'Edit lesson' : 'Create new lesson'}</h2>
+          <p className="text-sm text-indigo-100">Write rich markdown content, attach snippets, and publish instantly.</p>
+        </div>
+
+        <div className="space-y-5 px-5 pb-5">
         <label className="block">
-          <span className="mb-1 block text-sm font-medium">Title</span>
+          <span className="mb-1 block text-sm font-semibold text-slate-700">Title</span>
           <input
             type="text"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
-            className="w-full rounded border border-slate-300 px-3 py-2"
+            className="w-full rounded-xl border border-slate-300 px-3 py-2.5 shadow-sm outline-none ring-indigo-200 focus:ring"
+            placeholder="Example: JavaScript Functions Deep Dive"
             required
           />
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-medium">Content (Markdown)</span>
+          <span className="mb-1 block text-sm font-semibold text-slate-700">Content (Markdown)</span>
           <textarea
-            rows={10}
+            rows={12}
             value={form.content}
             onChange={(e) => setForm({ ...form, content: e.target.value })}
-            className="w-full rounded border border-slate-300 px-3 py-2 font-mono"
+            className="w-full rounded-xl border border-slate-300 px-3 py-2.5 font-mono shadow-sm outline-none ring-indigo-200 focus:ring"
+            placeholder="# Lesson title&#10;&#10;Start writing your markdown lesson content..."
             required
           />
+          <p className="mt-1 text-xs text-slate-500">Tip: Use headings, lists, and fenced code blocks for clean lesson structure.</p>
         </label>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="mb-1 block text-sm font-medium">Category</span>
+            <span className="mb-1 block text-sm font-semibold text-slate-700">Category</span>
             <select
               value={form.category_id}
               onChange={(e) => setForm({ ...form, category_id: e.target.value })}
-              className="w-full rounded border border-slate-300 px-3 py-2"
+              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 shadow-sm outline-none ring-indigo-200 focus:ring"
             >
               <option value="">No category</option>
               {categories.map((category) => (
@@ -209,11 +218,11 @@ function LessonsManagerPage() {
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-sm font-medium">Status</span>
+            <span className="mb-1 block text-sm font-semibold text-slate-700">Status</span>
             <select
               value={form.status}
               onChange={(e) => setForm({ ...form, status: e.target.value })}
-              className="w-full rounded border border-slate-300 px-3 py-2"
+              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 shadow-sm outline-none ring-indigo-200 focus:ring"
             >
               <option value="draft">Draft</option>
               <option value="published">Published</option>
@@ -223,28 +232,29 @@ function LessonsManagerPage() {
         </div>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-medium">Featured Image URL</span>
+          <span className="mb-1 block text-sm font-semibold text-slate-700">Featured Image URL</span>
           <input
             type="url"
             value={form.featured_image}
             onChange={(e) => setForm({ ...form, featured_image: e.target.value })}
-            className="w-full rounded border border-slate-300 px-3 py-2"
+            className="w-full rounded-xl border border-slate-300 px-3 py-2.5 shadow-sm outline-none ring-indigo-200 focus:ring"
+            placeholder="https://example.com/cover-image.jpg"
           />
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-medium">Code Snippets (split snippets with --- line)</span>
+          <span className="mb-1 block text-sm font-semibold text-slate-700">Code Snippets (split snippets with --- line)</span>
           <textarea
-            rows={6}
+            rows={8}
             value={form.code_snippets}
             onChange={(e) => setForm({ ...form, code_snippets: e.target.value })}
-            className="w-full rounded border border-slate-300 px-3 py-2 font-mono"
+            className="w-full rounded-xl border border-slate-300 px-3 py-2.5 font-mono shadow-sm outline-none ring-indigo-200 focus:ring"
             placeholder="console.log('Hello World');"
           />
         </label>
 
         <div className="flex gap-2">
-          <button type="submit" className="rounded bg-indigo-600 px-4 py-2 font-medium text-white">
+          <button type="submit" className="rounded-xl bg-indigo-600 px-4 py-2.5 font-semibold text-white shadow-sm transition hover:bg-indigo-700">
             {isEditing ? 'Update Lesson' : 'Create Lesson'}
           </button>
           {isEditing && (
@@ -254,11 +264,12 @@ function LessonsManagerPage() {
                 setEditingId(null);
                 setForm(initialForm);
               }}
-              className="rounded bg-slate-200 px-4 py-2 font-medium text-slate-700"
+              className="rounded-xl bg-slate-200 px-4 py-2.5 font-semibold text-slate-700 transition hover:bg-slate-300"
             >
               Cancel
             </button>
           )}
+        </div>
         </div>
       </form>
 
