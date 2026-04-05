@@ -49,7 +49,7 @@ function CodeBlock({ className, children }) {
   }
 
   return (
-    <div className="group relative my-5 overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-sm">
+    <div className="group relative mx-2 my-5 overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-sm sm:mx-3">
       <div className="flex items-center justify-between border-b border-slate-700/80 px-4 py-2 text-xs text-slate-300">
         <span className="uppercase tracking-wide">{language}</span>
         <button
@@ -61,7 +61,7 @@ function CodeBlock({ className, children }) {
         </button>
       </div>
 
-      <pre className="overflow-x-auto py-5 pl-10 pr-7 text-left text-sm leading-7">
+      <pre className="overflow-x-auto py-5 pl-12 pr-7 text-left text-sm leading-7">
         <code
           className={`language-${language} block min-w-max`}
           dangerouslySetInnerHTML={{ __html: highlightedCode }}
