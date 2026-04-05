@@ -1,6 +1,6 @@
-# ProgLearn CMS
+# Codev CMS
 
-ProgLearn CMS is a full-stack lessons platform for programming content built with React, Tailwind CSS, Supabase Auth/Database/Storage, and Prism.js highlighting.
+Codev CMS is a full-stack lessons platform for programming content built with React, Tailwind CSS, Supabase Auth/Database/Storage, and Prism.js highlighting.
 
 ## 1) Use it directly in GitHub Codespaces (online)
 
@@ -131,6 +131,7 @@ git push origin <your-branch>
 4. Add environment variables:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
+5. Keep `vercel.json` in repo so all routes rewrite to `index.html` (prevents 404 on refresh for `/lessons`, `/categories`, `/lesson/:id`, `/admin/*`).
 
 ### Supabase (Backend)
 - Keep Row Level Security enabled.

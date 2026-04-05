@@ -28,7 +28,7 @@ function Header() {
     <header className={`sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur transition ${scrolled ? 'shadow-sm' : ''}`}>
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         <Link to="/" className="flex flex-col leading-tight">
-          <span className="text-xl font-black tracking-tight text-indigo-600">ProgLearn</span>
+          <span className="text-xl font-black tracking-tight text-indigo-600">Codev</span>
           <span className="text-xs text-slate-500">by Dev Kumar</span>
         </Link>
 

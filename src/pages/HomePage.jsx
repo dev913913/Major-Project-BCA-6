@@ -13,7 +13,7 @@ function HomePage() {
   const [error, setError] = useState('');
 
   useSeo({
-    title: 'ProgLearn by Dev Kumar | Learn Programming with Interactive Lessons',
+    title: 'Codev by Dev Kumar | Learn Programming with Interactive Lessons',
     description: 'Master coding through interactive lessons and hands-on practice. Created by Dev Kumar.',
     type: 'website',
     url: typeof window !== 'undefined' ? window.location.href : undefined,
@@ -46,7 +46,7 @@ function HomePage() {
         data={{
           '@context': 'https://schema.org',
           '@type': 'WebSite',
-          name: 'ProgLearn',
+          name: 'Codev',
           author: { '@type': 'Person', name: 'Dev Kumar' },
           description: 'Master coding through interactive lessons and hands-on practice.',
         }}
@@ -57,7 +57,7 @@ function HomePage() {
         <div className="absolute -bottom-20 left-0 h-80 w-80 rounded-full bg-cyan-300/20 blur-3xl" aria-hidden="true" />
         <div className="relative z-10 max-w-3xl space-y-6">
           <p className="inline-flex rounded-full bg-white/20 px-4 py-1 text-sm font-medium">Created by Dev Kumar</p>
-          <h1 className="text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">Learn Programming with ProgLearn</h1>
+          <h1 className="text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">Learn Programming with Codev</h1>
           <p className="max-w-2xl text-lg text-indigo-50">Master coding through interactive lessons and hands-on practice.</p>
           <Link to="/lessons" className="inline-block rounded-xl bg-white px-6 py-3 font-semibold text-indigo-700 shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl">
             Browse Lessons
@@ -67,7 +67,7 @@ function HomePage() {
 
       <section className="space-y-6">
         <div className="text-center">
-          <h2 className="text-3xl font-bold">Why learners love ProgLearn</h2>
+          <h2 className="text-3xl font-bold">Why learners love Codev</h2>
           <p className="mt-2 text-slate-600">Professional learning experience designed by Dev Kumar.</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -125,8 +125,8 @@ function HomePage() {
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-2xl font-bold">About ProgLearn</h2>
-        <p className="mt-3 text-slate-600">ProgLearn is a modern coding education platform created by <strong>Dev Kumar</strong> to make programming approachable, practical, and inspiring for everyone.</p>
+        <h2 className="text-2xl font-bold">About Codev</h2>
+        <p className="mt-3 text-slate-600">Codev is a modern coding education platform created by <strong>Dev Kumar</strong> to make programming approachable, practical, and inspiring for everyone.</p>
       </section>
     </div>
   );
