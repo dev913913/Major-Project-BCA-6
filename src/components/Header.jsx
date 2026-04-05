@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const navItem = ({ isActive }) =>
@@ -8,6 +8,7 @@ const navItem = ({ isActive }) =>
 function Header() {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -17,6 +18,23 @@ function Header() {
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!mobileOpen) return undefined;
+
+    const onEscape = (event) => {
+      if (event.key === 'Escape') {
+        setMobileOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', onEscape);
+    return () => window.removeEventListener('keydown', onEscape);
+  }, [mobileOpen]);
 
   async function handleSignOut() {
     await signOut();
@@ -37,6 +55,7 @@ function Header() {
           className="rounded-lg border border-slate-200 px-3 py-1 text-sm md:hidden"
           onClick={() => setMobileOpen((prev) => !prev)}
           aria-expanded={mobileOpen}
+          aria-controls="mobile-navigation"
           aria-label="Toggle navigation menu"
         >
           ☰
@@ -70,7 +89,10 @@ function Header() {
       </div>
 
       {mobileOpen && (
-        <nav className="space-y-2 border-t border-slate-200 bg-white px-4 py-3 md:hidden">
+        <nav
+          id="mobile-navigation"
+          className="space-y-2 border-t border-slate-200 bg-white px-4 py-3 md:hidden"
+        >
           <NavLink to="/" onClick={() => setMobileOpen(false)} className="block text-sm font-medium text-slate-700">
             Home
           </NavLink>

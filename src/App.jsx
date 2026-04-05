@@ -3,48 +3,69 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const HomePage = lazy(() => import('./pages/HomePage'));
 const LessonsPage = lazy(() => import('./pages/LessonsPage'));
 const LessonPage = lazy(() => import('./pages/LessonPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const CategoriesPage = lazy(() => import('./pages/CategoriesPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const AdminLayout = lazy(() => import('./admin/AdminLayout'));
 const DashboardPage = lazy(() => import('./admin/DashboardPage'));
 const LessonsManagerPage = lazy(() => import('./admin/LessonsManagerPage'));
 const CategoriesManagerPage = lazy(() => import('./admin/CategoriesManagerPage'));
 const MediaManagerPage = lazy(() => import('./admin/MediaManagerPage'));
 
+function RouteFallback() {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="h-40 animate-pulse rounded-2xl bg-slate-100"
+    />
+  );
+}
+
 function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-indigo-700 focus:shadow"
+      >
+        Skip to main content
+      </a>
       <Header />
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <Suspense fallback={<div className="h-40 animate-pulse rounded-2xl bg-slate-100" />}>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/lessons" element={<LessonsPage />} />
-            <Route path="/lesson/:id" element={<LessonPage />} />
-            <Route path="/categories" element={<CategoriesPage />} />
-            <Route path="/login" element={<LoginPage />} />
+      <main id="main-content" className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <ErrorBoundary>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/lessons" element={<LessonsPage />} />
+              <Route path="/lesson/:id" element={<LessonPage />} />
+              <Route path="/categories" element={<CategoriesPage />} />
+              <Route path="/login" element={<LoginPage />} />
 
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute>
-                  <AdminLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<DashboardPage />} />
-              <Route path="lessons" element={<LessonsManagerPage />} />
-              <Route path="categories" element={<CategoriesManagerPage />} />
-              <Route path="media" element={<MediaManagerPage />} />
-            </Route>
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<DashboardPage />} />
+                <Route path="lessons" element={<LessonsManagerPage />} />
+                <Route path="categories" element={<CategoriesManagerPage />} />
+                <Route path="media" element={<MediaManagerPage />} />
+              </Route>
 
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Suspense>
+              <Route path="/404" element={<NotFoundPage />} />
+              <Route path="*" element={<Navigate to="/404" replace />} />
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
       </main>
       <Footer />
     </div>
