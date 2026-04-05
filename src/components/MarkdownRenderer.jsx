@@ -61,9 +61,9 @@ function CodeBlock({ className, children }) {
         </button>
       </div>
 
-      <pre className="overflow-x-auto px-6 py-5 text-sm leading-7">
+      <pre className="overflow-x-auto py-5 pl-10 pr-7 text-left text-sm leading-7">
         <code
-          className={`language-${language}`}
+          className={`language-${language} block min-w-max`}
           dangerouslySetInnerHTML={{ __html: highlightedCode }}
         />
       </pre>
