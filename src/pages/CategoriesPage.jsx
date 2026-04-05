@@ -56,7 +56,10 @@ function CategoriesPage() {
               <h2 className="text-xl font-bold">{category.name}</h2>
               <p className="mt-2 text-sm text-slate-600">Difficulty: {category.difficulty}</p>
               <p className="text-sm text-slate-600">Lessons: {category.lesson_count}</p>
-              <Link to="/lessons" className="mt-3 inline-block text-sm font-semibold text-indigo-600">
+              <Link
+                to={`/lessons?category=${encodeURIComponent(category.name)}`}
+                className="mt-3 inline-block text-sm font-semibold text-indigo-600"
+              >
                 Browse lessons →
               </Link>
             </article>

@@ -4,6 +4,10 @@ import { useAuth } from '../context/AuthContext';
 
 const navItem = ({ isActive }) =>
   `text-sm font-medium transition ${isActive ? 'text-indigo-600' : 'text-slate-700 hover:text-indigo-600'}`;
+const mobileNavItem = ({ isActive }) =>
+  `block rounded-lg px-2 py-1.5 text-sm font-medium transition ${
+    isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-100'
+  }`;
 
 function Header() {
   const { user, isAdmin, signOut } = useAuth();
@@ -93,17 +97,17 @@ function Header() {
           id="mobile-navigation"
           className="space-y-2 border-t border-slate-200 bg-white px-4 py-3 md:hidden"
         >
-          <NavLink to="/" onClick={() => setMobileOpen(false)} className="block text-sm font-medium text-slate-700">
+          <NavLink to="/" onClick={() => setMobileOpen(false)} className={mobileNavItem}>
             Home
           </NavLink>
-          <NavLink to="/lessons" onClick={() => setMobileOpen(false)} className="block text-sm font-medium text-slate-700">
+          <NavLink to="/lessons" onClick={() => setMobileOpen(false)} className={mobileNavItem}>
             Lessons
           </NavLink>
-          <NavLink to="/categories" onClick={() => setMobileOpen(false)} className="block text-sm font-medium text-slate-700">
+          <NavLink to="/categories" onClick={() => setMobileOpen(false)} className={mobileNavItem}>
             Categories
           </NavLink>
           {isAdmin && (
-            <NavLink to="/admin" onClick={() => setMobileOpen(false)} className="block text-sm font-medium text-slate-700">
+            <NavLink to="/admin" onClick={() => setMobileOpen(false)} className={mobileNavItem}>
               Admin
             </NavLink>
           )}

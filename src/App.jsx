@@ -4,6 +4,8 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import ScrollToTop from './components/ScrollToTop';
+import BackToTopButton from './components/BackToTopButton';
 
 const HomePage = lazy(() => import('./pages/HomePage'));
 const LessonsPage = lazy(() => import('./pages/LessonsPage'));
@@ -36,6 +38,7 @@ function App() {
       >
         Skip to main content
       </a>
+      <ScrollToTop />
       <Header />
       <main id="main-content" className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <ErrorBoundary>
@@ -67,6 +70,7 @@ function App() {
           </Suspense>
         </ErrorBoundary>
       </main>
+      <BackToTopButton />
       <Footer />
     </div>
   );

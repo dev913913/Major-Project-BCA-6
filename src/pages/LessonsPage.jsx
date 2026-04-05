@@ -1,15 +1,29 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import LessonCard from '../components/LessonCard';
 import { useSeo } from '../components/Seo';
 import { fetchPublishedLessons } from '../services/lessonService';
 import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
 
+const SORT_OPTIONS = [
+  { value: 'recent', label: 'Most recent' },
+  { value: 'popular', label: 'Most viewed' },
+  { value: 'title', label: 'Title (A-Z)' },
+];
+
+function normalizeSort(value) {
+  return SORT_OPTIONS.some((option) => option.value === value) ? value : 'recent';
+}
+
 function LessonsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchParamsString = searchParams.toString();
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [query, setQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState('all');
+  const [query, setQuery] = useState(searchParams.get('q') ?? '');
+  const [activeCategory, setActiveCategory] = useState(searchParams.get('category') ?? 'all');
+  const [sortBy, setSortBy] = useState(normalizeSort(searchParams.get('sort')));
 
   useSeo({
     title: 'Explore Lessons | Codev by Dev Kumar',
@@ -17,6 +31,23 @@ function LessonsPage() {
     type: 'website',
     url: typeof window !== 'undefined' ? window.location.href : undefined,
   });
+
+  useEffect(() => {
+    const nextParams = new URLSearchParams(searchParamsString);
+
+    if (query) nextParams.set('q', query);
+    else nextParams.delete('q');
+
+    if (activeCategory !== 'all') nextParams.set('category', activeCategory);
+    else nextParams.delete('category');
+
+    if (sortBy !== 'recent') nextParams.set('sort', sortBy);
+    else nextParams.delete('sort');
+
+    if (nextParams.toString() !== searchParamsString) {
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [query, activeCategory, sortBy, searchParamsString, setSearchParams]);
 
   useEffect(() => {
     fetchPublishedLessons()
@@ -34,12 +65,36 @@ function LessonsPage() {
   }, [lessons]);
 
   const filteredLessons = useMemo(() => {
-    return lessons.filter((lesson) => {
-      const matchesQuery = lesson.title.toLowerCase().includes(query.toLowerCase());
+    const normalizedQuery = query.trim().toLowerCase();
+
+    const filtered = lessons.filter((lesson) => {
+      const title = lesson.title?.toLowerCase() ?? '';
+      const content = lesson.content?.toLowerCase() ?? '';
+      const matchesQuery = !normalizedQuery || title.includes(normalizedQuery) || content.includes(normalizedQuery);
       const matchesCategory = activeCategory === 'all' || lesson.categories?.name === activeCategory;
       return matchesQuery && matchesCategory;
     });
-  }, [lessons, query, activeCategory]);
+
+    if (sortBy === 'popular') {
+      return [...filtered].sort((a, b) => (b.views_count ?? 0) - (a.views_count ?? 0));
+    }
+
+    if (sortBy === 'title') {
+      return [...filtered].sort((a, b) => (a.title ?? '').localeCompare(b.title ?? ''));
+    }
+
+    return [...filtered].sort((a, b) => {
+      const aDate = new Date(a.created_at ?? 0).getTime();
+      const bDate = new Date(b.created_at ?? 0).getTime();
+      return bDate - aDate;
+    });
+  }, [lessons, query, activeCategory, sortBy]);
+
+  function clearFilters() {
+    setQuery('');
+    setActiveCategory('all');
+    setSortBy('recent');
+  }
 
   return (
     <section className="space-y-8">
@@ -73,6 +128,37 @@ function LessonsPage() {
                 {category === 'all' ? 'All categories' : category}
               </button>
             ))}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-slate-600">
+              Showing <strong>{filteredLessons.length}</strong> of <strong>{lessons.length}</strong> lessons
+            </p>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <label htmlFor="sortBy" className="text-sm font-medium text-slate-700">
+                Sort by
+              </label>
+              <select
+                id="sortBy"
+                value={sortBy}
+                onChange={(event) => setSortBy(event.target.value)}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none ring-indigo-200 transition focus:ring"
+              >
+                {SORT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+              >
+                Clear
+              </button>
+            </div>
           </div>
         </div>
       </header>
