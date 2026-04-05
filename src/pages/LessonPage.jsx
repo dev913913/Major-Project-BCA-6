@@ -42,8 +42,8 @@ function LessonPage() {
   const [progress, setProgress] = useState(0);
 
   useSeo({
-    title: lesson ? `${lesson.title} | ProgLearn by Dev Kumar` : 'Lesson | ProgLearn by Dev Kumar',
-    description: lesson?.content?.slice(0, 150) ?? 'Programming lesson by Dev Kumar on ProgLearn.',
+    title: lesson ? `${lesson.title} | Codev by Dev Kumar` : 'Lesson | Codev by Dev Kumar',
+    description: lesson?.content?.slice(0, 150) ?? 'Programming lesson by Dev Kumar on Codev.',
     type: 'article',
     image: lesson?.featured_image,
     url: typeof window !== 'undefined' ? window.location.href : undefined,
