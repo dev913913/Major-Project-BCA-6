@@ -41,6 +41,14 @@ function CategoriesPage() {
             <div key={index} className="h-28 animate-pulse rounded-xl bg-slate-100" />
           ))}
         </div>
+      ) : categories.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
+          <p className="text-4xl" aria-hidden="true">
+            🗂️
+          </p>
+          <h2 className="mt-3 text-2xl font-bold">No categories yet</h2>
+          <p className="mt-2 text-slate-500">Please check back after new content is published.</p>
+        </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {categories.map((category) => (

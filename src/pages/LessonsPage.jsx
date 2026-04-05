@@ -54,6 +54,7 @@ function LessonsPage() {
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
+              aria-label="Search lessons by title"
               placeholder="Search lessons..."
               className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-4 outline-none ring-indigo-200 transition focus:ring"
             />
