@@ -73,7 +73,7 @@ function CodeBlock({ className, children }) {
 
 function MarkdownRenderer({ content }) {
   return (
-    <div className="prose prose-slate max-w-none rounded-2xl bg-white p-6 text-[17px] leading-8 shadow-sm prose-headings:font-bold prose-a:text-indigo-600 prose-a:transition hover:prose-a:text-indigo-700 prose-blockquote:rounded-r-lg prose-blockquote:border-l-4 prose-blockquote:border-indigo-200 prose-blockquote:bg-slate-50 prose-blockquote:px-4 prose-blockquote:py-1 prose-blockquote:italic prose-img:rounded-xl prose-pre:my-6 prose-pre:bg-transparent prose-pre:p-0 prose-code:before:hidden prose-code:after:hidden">
+    <div className="prose prose-slate max-w-none rounded-2xl bg-white p-6 text-[17px] leading-8 shadow-sm prose-headings:font-bold prose-a:text-indigo-600 prose-a:transition hover:prose-a:text-indigo-700 prose-blockquote:rounded-r-lg prose-blockquote:border-l-4 prose-blockquote:border-indigo-200 prose-blockquote:bg-slate-50 prose-blockquote:px-4 prose-blockquote:py-1 prose-blockquote:italic prose-img:rounded-xl prose-pre:my-6 prose-pre:mx-0 prose-pre:bg-transparent prose-code:before:hidden prose-code:after:hidden">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   createLesson,
   deleteLesson,
@@ -6,6 +7,7 @@ import {
   updateLesson,
 } from '../services/lessonService';
 import { fetchCategories } from '../services/categoryService';
+import MarkdownRenderer from '../components/MarkdownRenderer';
 import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
 
 const initialForm = {
@@ -151,9 +153,11 @@ function LessonsManagerPage() {
     }
   }
 
-  async function handleQuickStatusToggle(lesson) {
-    const nextStatus = lesson.status === 'published' ? 'draft' : 'published';
+  async function handleStatusChange(lesson, nextStatus) {
+    if (lesson.status === nextStatus) return;
+
     try {
+      setError('');
       await updateLesson(lesson.id, { status: nextStatus });
       await loadData();
     } catch (err) {
@@ -259,8 +263,41 @@ function LessonsManagerPage() {
               Cancel
             </button>
           )}
+          {isEditing && (
+            <Link
+              to={`/lesson/${editingId}`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded bg-slate-900 px-4 py-2 font-medium text-white"
+            >
+              Open Preview Page
+            </Link>
+          )}
         </div>
       </form>
+
+      <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold">Live Preview</h2>
+          <p className="text-sm text-slate-500">
+            {isEditing ? 'Previewing current lesson edits.' : 'Previewing lesson draft before publishing.'}
+          </p>
+        </div>
+
+        <article className="space-y-4 rounded-lg border border-slate-100 bg-slate-50 p-4">
+          <h3 className="text-2xl font-bold text-slate-900">{form.title || 'Untitled Lesson'}</h3>
+          <MarkdownRenderer content={form.content || 'Start writing to see a preview...'} />
+
+          {mapTextareaToCodeSnippets(form.code_snippets).length > 0 && (
+            <div className="space-y-3">
+              <h4 className="text-lg font-semibold text-slate-800">Code Snippets Preview</h4>
+              {mapTextareaToCodeSnippets(form.code_snippets).map((snippet, index) => (
+                <MarkdownRenderer key={`preview-snippet-${index + 1}`} content={`\`\`\`javascript\n${snippet}\n\`\`\``} />
+              ))}
+            </div>
+          )}
+        </article>
+      </section>
 
       <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -312,28 +349,58 @@ function LessonsManagerPage() {
                     </td>
                     <td className="px-4 py-2 font-semibold text-indigo-700">{lesson.views_count ?? 0}</td>
                     <td className="px-4 py-2">{lesson.categories?.name ?? 'N/A'}</td>
-                    <td className="space-x-2 px-4 py-2">
-                      <button
-                        type="button"
-                        className="rounded bg-amber-100 px-3 py-1 text-amber-800"
-                        onClick={() => handleEdit(lesson)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded bg-indigo-100 px-3 py-1 text-indigo-700"
-                        onClick={() => handleQuickStatusToggle(lesson)}
-                      >
-                        {lesson.status === 'published' ? 'Unpublish' : 'Publish'}
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded bg-red-100 px-3 py-1 text-red-700"
-                        onClick={() => handleDelete(lesson.id)}
-                      >
-                        Delete
-                      </button>
+                    <td className="px-4 py-2">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="rounded bg-amber-100 px-3 py-1 text-amber-800"
+                          onClick={() => handleEdit(lesson)}
+                        >
+                          Edit
+                        </button>
+                        <Link
+                          to={`/lesson/${lesson.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="rounded bg-slate-100 px-3 py-1 text-slate-700"
+                        >
+                          {lesson.status === 'published' ? 'View' : 'Preview'}
+                        </Link>
+                        {lesson.status !== 'published' && (
+                          <button
+                            type="button"
+                            className="rounded bg-emerald-100 px-3 py-1 text-emerald-800"
+                            onClick={() => handleStatusChange(lesson, 'published')}
+                          >
+                            Publish
+                          </button>
+                        )}
+                        {lesson.status !== 'archived' && (
+                          <button
+                            type="button"
+                            className="rounded bg-slate-200 px-3 py-1 text-slate-700"
+                            onClick={() => handleStatusChange(lesson, 'archived')}
+                          >
+                            Archive
+                          </button>
+                        )}
+                        {lesson.status !== 'draft' && (
+                          <button
+                            type="button"
+                            className="rounded bg-indigo-100 px-3 py-1 text-indigo-700"
+                            onClick={() => handleStatusChange(lesson, 'draft')}
+                          >
+                            Move to Draft
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="rounded bg-red-100 px-3 py-1 text-red-700"
+                          onClick={() => handleDelete(lesson.id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
