@@ -247,7 +247,7 @@ function LessonsManagerPage() {
           />
         </label>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button type="submit" className="rounded bg-indigo-600 px-4 py-2 font-medium text-white">
             {isEditing ? 'Update Lesson' : 'Create Lesson'}
           </button>
