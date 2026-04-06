@@ -27,7 +27,7 @@ function AdminLayout() {
           ))}
         </nav>
       </aside>
-      <section>
+      <section className="min-w-0">
         <Outlet />
       </section>
     </div>

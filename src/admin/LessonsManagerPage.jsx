@@ -20,6 +20,8 @@ const initialForm = {
 };
 
 const PAGE_SIZE = 8;
+const MIN_TITLE_LENGTH = 5;
+const MIN_CONTENT_LENGTH = 50;
 
 function mapCodeSnippetsToTextarea(value) {
   if (!Array.isArray(value) || value.length === 0) return '';
@@ -53,14 +55,45 @@ function LessonsManagerPage() {
   const [lessons, setLessons] = useState([]);
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState(initialForm);
+  const [savedForm, setSavedForm] = useState(initialForm);
   const [editingId, setEditingId] = useState(null);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const isEditing = useMemo(() => Boolean(editingId), [editingId]);
+  const titleError = useMemo(() => {
+    const trimmedTitle = form.title.trim();
+    if (!trimmedTitle) return 'Title is required.';
+    if (trimmedTitle.length < MIN_TITLE_LENGTH) {
+      return `Title should be at least ${MIN_TITLE_LENGTH} characters.`;
+    }
+    return '';
+  }, [form.title]);
+
+  const contentError = useMemo(() => {
+    const trimmedContent = form.content.trim();
+    if (!trimmedContent) return 'Content is required.';
+    if (trimmedContent.length < MIN_CONTENT_LENGTH) {
+      return `Content should be at least ${MIN_CONTENT_LENGTH} characters.`;
+    }
+    return '';
+  }, [form.content]);
+
+  const canSubmit = !titleError && !contentError;
+  const hasUnsavedChanges = useMemo(() => {
+    return (
+      form.title !== savedForm.title
+      || form.content !== savedForm.content
+      || form.code_snippets !== savedForm.code_snippets
+      || form.featured_image !== savedForm.featured_image
+      || form.category_id !== savedForm.category_id
+      || form.status !== savedForm.status
+    );
+  }, [form, savedForm]);
 
   async function loadData() {
     try {
@@ -80,6 +113,17 @@ function LessonsManagerPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    const onBeforeUnload = (event) => {
+      if (!hasUnsavedChanges) return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   const filteredLessons = useMemo(() => {
     return lessons.filter((lesson) => {
@@ -102,6 +146,7 @@ function LessonsManagerPage() {
 
   async function handleSubmit(event) {
     event.preventDefault();
+    if (!canSubmit) return;
 
     const payload = {
       ...form,
@@ -111,6 +156,7 @@ function LessonsManagerPage() {
 
     try {
       setError('');
+      setSuccess('');
       if (isEditing) {
         await updateLesson(editingId, payload);
       } else {
@@ -118,7 +164,9 @@ function LessonsManagerPage() {
       }
 
       setForm(initialForm);
+      setSavedForm(initialForm);
       setEditingId(null);
+      setSuccess(isEditing ? 'Lesson updated successfully.' : 'Lesson created successfully.');
       await loadData();
     } catch (err) {
       reportError('Admin lesson save', err);
@@ -127,15 +175,18 @@ function LessonsManagerPage() {
   }
 
   function handleEdit(lesson) {
-    setEditingId(lesson.id);
-    setForm({
+    const nextForm = {
       title: lesson.title ?? '',
       content: lesson.content ?? '',
       code_snippets: mapCodeSnippetsToTextarea(lesson.code_snippets),
       featured_image: lesson.featured_image ?? '',
       category_id: lesson.category_id ?? '',
       status: lesson.status ?? 'draft',
-    });
+    };
+
+    setEditingId(lesson.id);
+    setForm(nextForm);
+    setSavedForm(nextForm);
   }
 
   async function handleDelete(id) {
@@ -145,6 +196,7 @@ function LessonsManagerPage() {
       if (editingId === id) {
         setEditingId(null);
         setForm(initialForm);
+        setSavedForm(initialForm);
       }
       await loadData();
     } catch (err) {
@@ -171,6 +223,7 @@ function LessonsManagerPage() {
       <h1 className="text-2xl font-semibold">Lessons</h1>
 
       {error && <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {success && <p className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{success}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <label className="block">
@@ -182,6 +235,13 @@ function LessonsManagerPage() {
             className="w-full rounded border border-slate-300 px-3 py-2"
             required
           />
+          {titleError ? (
+            <span className="mt-1 block text-xs text-red-600">{titleError}</span>
+          ) : (
+            <span className="mt-1 block text-xs text-slate-500">
+              Looks good ({form.title.trim().length} characters).
+            </span>
+          )}
         </label>
 
         <label className="block">
@@ -193,6 +253,13 @@ function LessonsManagerPage() {
             className="w-full rounded border border-slate-300 px-3 py-2 font-mono"
             required
           />
+          {contentError ? (
+            <span className="mt-1 block text-xs text-red-600">{contentError}</span>
+          ) : (
+            <span className="mt-1 block text-xs text-slate-500">
+              Great depth ({form.content.trim().length} characters).
+            </span>
+          )}
         </label>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -247,8 +314,13 @@ function LessonsManagerPage() {
           />
         </label>
 
-        <div className="flex gap-2">
-          <button type="submit" className="rounded bg-indigo-600 px-4 py-2 font-medium text-white">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="submit"
+            className="rounded bg-indigo-600 px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:bg-indigo-300"
+            disabled={!canSubmit}
+            title={!canSubmit ? 'Fix validation errors before saving.' : undefined}
+          >
             {isEditing ? 'Update Lesson' : 'Create Lesson'}
           </button>
           {isEditing && (
@@ -257,6 +329,7 @@ function LessonsManagerPage() {
               onClick={() => {
                 setEditingId(null);
                 setForm(initialForm);
+                setSavedForm(initialForm);
               }}
               className="rounded bg-slate-200 px-4 py-2 font-medium text-slate-700"
             >

@@ -11,6 +11,12 @@ function excerpt(content) {
   return stripped.length > 100 ? `${stripped.slice(0, 100)}…` : stripped;
 }
 
+function formatLessonDate(value) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'Recently added';
+  return parsed.toLocaleDateString();
+}
+
 function LessonCard({ lesson, featured = false }) {
   const readingTime = estimateReadingTime(lesson.content);
 
@@ -42,7 +48,7 @@ function LessonCard({ lesson, featured = false }) {
         <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
           <StatPill label={`${lesson.views_count ?? 0} views`} icon="👁" />
           <StatPill label={`${readingTime} min read`} icon="🕒" />
-          <StatPill label={new Date(lesson.created_at).toLocaleDateString()} icon="📅" />
+          <StatPill label={formatLessonDate(lesson.created_at)} icon="📅" />
         </div>
 
         <div className="pt-1 text-sm font-semibold text-indigo-600">{featured ? 'Read More →' : 'Open Lesson →'}</div>
