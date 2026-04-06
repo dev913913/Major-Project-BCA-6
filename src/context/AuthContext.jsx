@@ -8,14 +8,20 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   async function loadProfile(userId) {
-    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
-    if (error) {
-      setProfile(null);
-      return;
+    setProfileLoading(true);
+    try {
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      if (error) {
+        setProfile(null);
+        return;
+      }
+      setProfile(data);
+    } finally {
+      setProfileLoading(false);
     }
-    setProfile(data);
   }
 
   useEffect(() => {
@@ -26,6 +32,8 @@ export function AuthProvider({ children }) {
       setSession(data.session);
       if (data.session?.user) {
         await loadProfile(data.session.user.id);
+      } else {
+        setProfileLoading(false);
       }
       if (mounted) setLoading(false);
     });
@@ -38,6 +46,7 @@ export function AuthProvider({ children }) {
         loadProfile(newSession.user.id);
       } else {
         setProfile(null);
+        setProfileLoading(false);
       }
       if (mounted) setLoading(false);
     });
@@ -57,6 +66,7 @@ export function AuthProvider({ children }) {
 
     setSession(null);
     setProfile(null);
+    setProfileLoading(false);
 
     return { error };
   }, []);
@@ -68,10 +78,11 @@ export function AuthProvider({ children }) {
       profile,
       isAdmin: profile?.role === 'admin',
       loading,
+      profileLoading,
       signIn: (email, password) => supabase.auth.signInWithPassword({ email, password }),
       signOut,
     }),
-    [session, profile, loading, signOut],
+    [session, profile, loading, profileLoading, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
