@@ -126,7 +126,7 @@ function LessonPage() {
       </header>
 
       <div className="grid gap-8 lg:grid-cols-[1fr,280px]">
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <MarkdownRenderer content={lesson.content} />
 
           {codeSnippets.length > 0 && (
