@@ -10,6 +10,13 @@ body {
   @apply bg-slate-50 text-slate-900;
 }
 
+html,
+body,
+#root {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 :focus-visible {
   outline: 2px solid rgb(79 70 229);
   outline-offset: 2px;
