@@ -16,12 +16,14 @@ That meant the website could not show a usable message or let users know what wa
 
 ## What is now different
 - The app no longer throws a fatal error during startup when Supabase is not configured.
-- Instead, it shows a friendly message explaining which env vars are missing.
+- Instead, users see a simple message that the site is temporarily unavailable.
+- The precise technical details are logged to the browser console for developers.
 - The auth context now avoids calling Supabase when the configuration is unavailable.
 
 ## Why this is better
 - The site fails gracefully instead of crashing.
-- Developers see a clear error message with next steps.
+- Users are not shown technical configuration details.
+- Developers still get the exact error information in the console.
 - It reduces the chance of unexpected blank pages or hard-to-debug startup failures.
 
 ## Next step

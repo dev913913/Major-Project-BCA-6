@@ -32,6 +32,8 @@ function RouteFallback() {
 
 function App() {
   if (!isSupabaseConfigured) {
+    console.error('Supabase is not configured. Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY.');
+
     return (
       <div className="min-h-screen bg-slate-50 text-slate-900">
         <main className="mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center px-4 py-20 text-center sm:px-6 lg:px-8">
@@ -39,16 +41,12 @@ function App() {
             <p className="text-5xl" aria-hidden="true">
               ⚠️
             </p>
-            <h1 className="mt-6 text-3xl font-black text-slate-900">Supabase is not configured</h1>
+            <h1 className="mt-6 text-3xl font-black text-slate-900">Something went wrong</h1>
             <p className="mt-4 text-left text-slate-600">
-              Your app is missing required environment variables. Please add the following values to your <code className="rounded bg-slate-100 px-1.5 py-0.5">.env</code> file:
+              This site is temporarily unavailable due to database issues. Please try again later.
             </p>
-            <ul className="mt-4 list-inside list-disc text-left text-slate-600">
-              <li>VITE_SUPABASE_URL</li>
-              <li>VITE_SUPABASE_ANON_KEY</li>
-            </ul>
             <p className="mt-6 text-left text-slate-600">
-              Once these values are set and the app is restarted, the site will load normally.
+              If this continues, please contact the site owner.
             </p>
           </div>
         </main>
