@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import LessonCard from '../components/LessonCard';
+import ErrorState from '../components/ErrorState';
 import { useSeo } from '../components/Seo';
 import { fetchPublishedLessons } from '../services/lessonService';
 import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
@@ -49,7 +50,10 @@ function LessonsPage() {
     }
   }, [query, activeCategory, sortBy, searchParamsString, setSearchParams]);
 
-  useEffect(() => {
+  const loadLessons = useCallback(() => {
+    setLoading(true);
+    setError('');
+
     fetchPublishedLessons()
       .then(setLessons)
       .catch((err) => {
@@ -58,6 +62,10 @@ function LessonsPage() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadLessons();
+  }, [loadLessons]);
 
   const categories = useMemo(() => {
     const names = new Set(lessons.map((lesson) => lesson.categories?.name).filter(Boolean));
@@ -163,7 +171,7 @@ function LessonsPage() {
         </div>
       </header>
 
-      {error && <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">{error}</p>}
+      {error && <ErrorState message={error} onRetry={loadLessons} />}
 
       {loading ? (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
