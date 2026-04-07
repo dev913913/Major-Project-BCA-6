@@ -72,6 +72,17 @@ function LessonsPage() {
     return ['all', ...names];
   }, [lessons]);
 
+  const categoryCounts = useMemo(() => {
+    const counts = new Map();
+    lessons.forEach((lesson) => {
+      const name = lesson.categories?.name;
+      if (name) {
+        counts.set(name, (counts.get(name) ?? 0) + 1);
+      }
+    });
+    return counts;
+  }, [lessons]);
+
   const filteredLessons = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
@@ -133,7 +144,9 @@ function LessonsPage() {
                   activeCategory === category ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
-                {category === 'all' ? 'All categories' : category}
+                {category === 'all'
+                  ? `All categories (${lessons.length})`
+                  : `${category} (${categoryCounts.get(category) ?? 0})`}
               </button>
             ))}
           </div>
