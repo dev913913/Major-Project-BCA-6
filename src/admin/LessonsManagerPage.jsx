@@ -59,6 +59,8 @@ function LessonsManagerPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const safeLessons = lessons ?? [];
+  const safeCategories = categories ?? [];
 
   const isEditing = useMemo(() => Boolean(editingId), [editingId]);
 
@@ -82,12 +84,13 @@ function LessonsManagerPage() {
   }, []);
 
   const filteredLessons = useMemo(() => {
-    return lessons.filter((lesson) => {
-      const matchesQuery = lesson.title.toLowerCase().includes(query.toLowerCase());
+    return (safeLessons ?? []).filter((lesson) => {
+      const title = typeof lesson.title === 'string' ? lesson.title : '';
+      const matchesQuery = title.toLowerCase().includes(query.toLowerCase());
       const matchesStatus = statusFilter === 'all' ? true : lesson.status === statusFilter;
       return matchesQuery && matchesStatus;
     });
-  }, [lessons, query, statusFilter]);
+  }, [safeLessons, query, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredLessons.length / PAGE_SIZE));
 
@@ -204,7 +207,7 @@ function LessonsManagerPage() {
               className="w-full rounded border border-slate-300 px-3 py-2"
             >
               <option value="">No category</option>
-              {categories.map((category) => (
+              {(safeCategories ?? []).map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name} ({category.difficulty})
                 </option>
