@@ -31,8 +31,20 @@ function normalizeCodeSnippets(rawSnippets) {
 }
 
 function wordsToMinutes(content) {
-  const words = (content ?? '').split(/\s+/).filter(Boolean).length;
+  const normalized = typeof content === 'string' ? content : '';
+  const words = normalized.split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.ceil(words / 200));
+}
+
+function formatLessonDate(value) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'Recently';
+  return parsed.toLocaleDateString();
+}
+
+function lessonDescription(content) {
+  if (typeof content !== 'string') return 'Programming lesson by Dev Kumar on Codev.';
+  return content.slice(0, 150) || 'Programming lesson by Dev Kumar on Codev.';
 }
 
 function LessonPage() {
@@ -44,7 +56,7 @@ function LessonPage() {
 
   useSeo({
     title: lesson ? `${lesson.title} | Codev by Dev Kumar` : 'Lesson | Codev by Dev Kumar',
-    description: lesson?.content?.slice(0, 150) ?? 'Programming lesson by Dev Kumar on Codev.',
+    description: lessonDescription(lesson?.content),
     type: 'article',
     image: lesson?.featured_image,
     url: typeof window !== 'undefined' ? window.location.href : undefined,
@@ -60,7 +72,7 @@ function LessonPage() {
       const allLessons = await fetchPublishedLessons();
       setRelatedLessons(
         allLessons
-          .filter((entry) => entry.id !== data.id && entry.categories?.name === data.categories?.name)
+          .filter((entry) => entry && entry.id !== data.id && entry.categories?.name === data.categories?.name)
           .slice(0, 3),
       );
     } catch (err) {
@@ -117,10 +129,10 @@ function LessonPage() {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/70 to-slate-900/20" />
         <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-10">
-          <span className="mb-3 inline-flex w-fit rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide">{lesson.categories?.name ?? 'General'}</span>
+            <span className="mb-3 inline-flex w-fit rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide">{lesson.categories?.name ?? 'General'}</span>
           <h1 className="max-w-4xl text-3xl font-black leading-tight sm:text-5xl">{lesson.title}</h1>
           <div className="mt-4 flex flex-wrap gap-3 text-sm text-slate-200">
-            <span>📅 {new Date(lesson.created_at).toLocaleDateString()}</span>
+            <span>📅 {formatLessonDate(lesson.created_at)}</span>
             <span>👁 {lesson.views_count ?? 0} views</span>
             <span>🕒 {readingTime} min read</span>
             <span>✍️ By Dev Kumar</span>
