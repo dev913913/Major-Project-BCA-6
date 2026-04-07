@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ErrorState from '../components/ErrorState';
+import SkeletonGrid from '../components/SkeletonGrid';
 import { useSeo } from '../components/Seo';
 import { fetchCategories } from '../services/categoryService';
 import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
@@ -44,11 +45,7 @@ function CategoriesPage() {
       {error && <ErrorState message={error} onRetry={loadCategories} />}
 
       {loading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <div key={index} className="h-28 animate-pulse rounded-xl bg-slate-100" />
-          ))}
-        </div>
+        <SkeletonGrid gridClass="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" itemClass="h-28 animate-pulse rounded-xl bg-slate-100" />
       ) : categories.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
           <p className="text-4xl" aria-hidden="true">

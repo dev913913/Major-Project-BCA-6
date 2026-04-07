@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import LessonCard from '../components/LessonCard';
 import ErrorState from '../components/ErrorState';
+import SkeletonGrid from '../components/SkeletonGrid';
 import { useSeo } from '../components/Seo';
 import { fetchPublishedLessons } from '../services/lessonService';
 import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
@@ -187,11 +188,7 @@ function LessonsPage() {
       {error && <ErrorState message={error} onRetry={loadLessons} />}
 
       {loading ? (
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <div key={index} className="h-80 animate-pulse rounded-2xl bg-slate-100" />
-          ))}
-        </div>
+        <SkeletonGrid />
       ) : filteredLessons.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
           <p className="text-4xl" aria-hidden="true">📚</p>

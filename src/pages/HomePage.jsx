@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import LessonCard from '../components/LessonCard';
 import ErrorState from '../components/ErrorState';
+import SkeletonGrid from '../components/SkeletonGrid';
 import { JsonLd, useSeo } from '../components/Seo';
 import { fetchPublishedLessons } from '../services/lessonService';
 import { fetchCategories } from '../services/categoryService';
@@ -101,7 +102,7 @@ function HomePage() {
         </div>
 
         {loading ? (
-          <CardSkeletonGrid count={3} />
+          <SkeletonGrid count={3} />
         ) : error ? (
           <ErrorState message={error} onRetry={loadPageData} />
         ) : popularLessons.length === 0 ? (
@@ -146,16 +147,6 @@ function Stat({ title, value }) {
       <p className="text-sm text-slate-300">{title}</p>
       <p className="mt-2 text-4xl font-black">{Number(value).toLocaleString()}</p>
     </article>
-  );
-}
-
-function CardSkeletonGrid({ count }) {
-  return (
-    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-      {Array.from({ length: count }).map((_, index) => (
-        <div key={index} className="h-80 animate-pulse rounded-2xl bg-slate-100" />
-      ))}
-    </div>
   );
 }
 
