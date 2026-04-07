@@ -196,7 +196,14 @@ function LessonsPage() {
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
           <p className="text-4xl" aria-hidden="true">📚</p>
           <h2 className="mt-3 text-2xl font-bold">No lessons found</h2>
-          <p className="mt-2 text-slate-500">Try different search or filter</p>
+          <p className="mt-2 text-slate-500">Try a different search or filter, or reset your selections.</p>
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="mt-6 inline-flex rounded-full bg-indigo-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
+          >
+            Reset filters
+          </button>
         </div>
       ) : (
         <div className="grid animate-in gap-5 md:grid-cols-2 xl:grid-cols-3">
