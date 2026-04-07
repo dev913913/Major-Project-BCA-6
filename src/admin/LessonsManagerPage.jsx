@@ -83,7 +83,8 @@ function LessonsManagerPage() {
 
   const filteredLessons = useMemo(() => {
     return lessons.filter((lesson) => {
-      const matchesQuery = lesson.title.toLowerCase().includes(query.toLowerCase());
+      const title = typeof lesson.title === 'string' ? lesson.title : '';
+      const matchesQuery = title.toLowerCase().includes(query.toLowerCase());
       const matchesStatus = statusFilter === 'all' ? true : lesson.status === statusFilter;
       return matchesQuery && matchesStatus;
     });
