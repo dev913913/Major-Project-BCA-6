@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { reportError } from '../utils/errorUtils';
 
 class ErrorBoundary extends Component {
@@ -53,10 +53,4 @@ class ErrorBoundary extends Component {
   }
 }
 
-function RouteAwareErrorBoundary({ children }) {
-  const location = useLocation();
-
-  return <ErrorBoundary resetKey={location.pathname}>{children}</ErrorBoundary>;
-}
-
-export default RouteAwareErrorBoundary;
+export default ErrorBoundary;
