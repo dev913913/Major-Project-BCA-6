@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -31,6 +31,8 @@ function RouteFallback() {
 }
 
 function App() {
+  const location = useLocation();
+
   if (!isSupabaseConfigured) {
     console.error('Supabase is not configured. Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY.');
 
@@ -65,7 +67,7 @@ function App() {
       <ScrollToTop />
       <Header />
       <main id="main-content" className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <ErrorBoundary>
+        <ErrorBoundary key={location.pathname} resetKey={location.pathname}>
           <Suspense fallback={<RouteFallback />}>
             <Routes>
               <Route path="/" element={<HomePage />} />
