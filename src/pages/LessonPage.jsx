@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import LessonCard from '../components/LessonCard';
+import ErrorState from '../components/ErrorState';
 import { JsonLd, useSeo } from '../components/Seo';
 import { fetchLessonById, fetchPublishedLessons, incrementLessonViews } from '../services/lessonService';
 import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
@@ -30,8 +31,20 @@ function normalizeCodeSnippets(rawSnippets) {
 }
 
 function wordsToMinutes(content) {
-  const words = (content ?? '').split(/\s+/).filter(Boolean).length;
+  const normalized = typeof content === 'string' ? content : '';
+  const words = normalized.split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.ceil(words / 200));
+}
+
+function formatLessonDate(value) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'Recently';
+  return parsed.toLocaleDateString();
+}
+
+function lessonDescription(content) {
+  if (typeof content !== 'string') return 'Programming lesson by Dev Kumar on Codev.';
+  return content.slice(0, 150) || 'Programming lesson by Dev Kumar on Codev.';
 }
 
 function LessonPage() {
@@ -43,32 +56,34 @@ function LessonPage() {
 
   useSeo({
     title: lesson ? `${lesson.title} | Codev by Dev Kumar` : 'Lesson | Codev by Dev Kumar',
-    description: lesson?.content?.slice(0, 150) ?? 'Programming lesson by Dev Kumar on Codev.',
+    description: lessonDescription(lesson?.content),
     type: 'article',
     image: lesson?.featured_image,
     url: typeof window !== 'undefined' ? window.location.href : undefined,
   });
 
-  useEffect(() => {
-    async function loadLesson() {
-      try {
-        const data = await fetchLessonById(id);
-        setLesson(data);
-        await incrementLessonViews(data.id);
-        const allLessons = await fetchPublishedLessons();
-        setRelatedLessons(
-          allLessons
-            .filter((entry) => entry.id !== data.id && entry.categories?.name === data.categories?.name)
-            .slice(0, 3),
-        );
-      } catch (err) {
-        reportError('LessonPage load', err);
-        setError(friendlyErrorMessage('We could not open this lesson right now. Please try again.'));
-      }
-    }
+  const loadLesson = useCallback(async () => {
+    setError('');
 
-    loadLesson();
+    try {
+      const data = await fetchLessonById(id);
+      setLesson(data);
+      await incrementLessonViews(data.id);
+      const allLessons = await fetchPublishedLessons();
+      setRelatedLessons(
+        allLessons
+          .filter((entry) => entry && entry.id !== data.id && entry.categories?.name === data.categories?.name)
+          .slice(0, 3),
+      );
+    } catch (err) {
+      reportError('LessonPage load', err);
+      setError(friendlyErrorMessage('We could not open this lesson right now. Please try again.'));
+    }
   }, [id]);
+
+  useEffect(() => {
+    loadLesson();
+  }, [loadLesson]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -85,7 +100,7 @@ function LessonPage() {
   const codeSnippets = useMemo(() => normalizeCodeSnippets(lesson?.code_snippets), [lesson?.code_snippets]);
   const readingTime = useMemo(() => wordsToMinutes(lesson?.content), [lesson?.content]);
 
-  if (error) return <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">{error}</p>;
+  if (error) return <ErrorState message={error} onRetry={loadLesson} />;
   if (!lesson) return <div className="h-64 animate-pulse rounded-2xl bg-slate-100" />;
 
   return (
@@ -114,10 +129,10 @@ function LessonPage() {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/70 to-slate-900/20" />
         <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-10">
-          <span className="mb-3 inline-flex w-fit rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide">{lesson.categories?.name ?? 'General'}</span>
+            <span className="mb-3 inline-flex w-fit rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide">{lesson.categories?.name ?? 'General'}</span>
           <h1 className="max-w-4xl text-3xl font-black leading-tight sm:text-5xl">{lesson.title}</h1>
           <div className="mt-4 flex flex-wrap gap-3 text-sm text-slate-200">
-            <span>📅 {new Date(lesson.created_at).toLocaleDateString()}</span>
+            <span>📅 {formatLessonDate(lesson.created_at)}</span>
             <span>👁 {lesson.views_count ?? 0} views</span>
             <span>🕒 {readingTime} min read</span>
             <span>✍️ By Dev Kumar</span>
