@@ -7,7 +7,7 @@ import './styles/index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_prependBasename: true, v7_startTransition: true }}>
       <AuthProvider>
         <App />
       </AuthProvider>

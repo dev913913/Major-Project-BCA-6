@@ -72,6 +72,8 @@ function CodeBlock({ className, children }) {
 }
 
 function MarkdownRenderer({ content }) {
+  const safeContent = typeof content === 'string' ? content : content == null ? '' : String(content);
+
   return (
     <div className="prose prose-slate max-w-none overflow-x-hidden rounded-2xl bg-white p-4 text-[17px] leading-8 shadow-sm prose-headings:font-bold prose-a:text-indigo-600 prose-a:transition hover:prose-a:text-indigo-700 prose-blockquote:rounded-r-lg prose-blockquote:border-l-4 prose-blockquote:border-indigo-200 prose-blockquote:bg-slate-50 prose-blockquote:px-4 prose-blockquote:py-1 prose-blockquote:italic prose-img:rounded-xl prose-img:max-w-full prose-pre:my-6 prose-pre:mx-0 prose-pre:max-w-full prose-pre:bg-transparent prose-code:break-words prose-code:before:hidden prose-code:after:hidden prose-p:break-words prose-li:break-words sm:p-6">
       <ReactMarkdown
@@ -91,7 +93,7 @@ function MarkdownRenderer({ content }) {
           },
         }}
       >
-        {content}
+        {safeContent}
       </ReactMarkdown>
     </div>
   );
