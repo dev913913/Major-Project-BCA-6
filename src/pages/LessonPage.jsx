@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import LessonCard from '../components/LessonCard';
+import ErrorState from '../components/ErrorState';
 import { JsonLd, useSeo } from '../components/Seo';
 import { fetchLessonById, fetchPublishedLessons, incrementLessonViews } from '../services/lessonService';
 import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
@@ -49,26 +50,28 @@ function LessonPage() {
     url: typeof window !== 'undefined' ? window.location.href : undefined,
   });
 
-  useEffect(() => {
-    async function loadLesson() {
-      try {
-        const data = await fetchLessonById(id);
-        setLesson(data);
-        await incrementLessonViews(data.id);
-        const allLessons = await fetchPublishedLessons();
-        setRelatedLessons(
-          allLessons
-            .filter((entry) => entry.id !== data.id && entry.categories?.name === data.categories?.name)
-            .slice(0, 3),
-        );
-      } catch (err) {
-        reportError('LessonPage load', err);
-        setError(friendlyErrorMessage('We could not open this lesson right now. Please try again.'));
-      }
-    }
+  const loadLesson = useCallback(async () => {
+    setError('');
 
-    loadLesson();
+    try {
+      const data = await fetchLessonById(id);
+      setLesson(data);
+      await incrementLessonViews(data.id);
+      const allLessons = await fetchPublishedLessons();
+      setRelatedLessons(
+        allLessons
+          .filter((entry) => entry.id !== data.id && entry.categories?.name === data.categories?.name)
+          .slice(0, 3),
+      );
+    } catch (err) {
+      reportError('LessonPage load', err);
+      setError(friendlyErrorMessage('We could not open this lesson right now. Please try again.'));
+    }
   }, [id]);
+
+  useEffect(() => {
+    loadLesson();
+  }, [loadLesson]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -85,7 +88,7 @@ function LessonPage() {
   const codeSnippets = useMemo(() => normalizeCodeSnippets(lesson?.code_snippets), [lesson?.code_snippets]);
   const readingTime = useMemo(() => wordsToMinutes(lesson?.content), [lesson?.content]);
 
-  if (error) return <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">{error}</p>;
+  if (error) return <ErrorState message={error} onRetry={loadLesson} />;
   if (!lesson) return <div className="h-64 animate-pulse rounded-2xl bg-slate-100" />;
 
   return (
