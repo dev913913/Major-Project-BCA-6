@@ -12,12 +12,20 @@ const STATUS_COLORS = {
 
 const PIE_COLORS = ['#4f46e5', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6', '#f97316'];
 
+function safeDateKey(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString().slice(0, 10);
+}
+
 function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [lessons, setLessons] = useState([]);
   const [categories, setCategories] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const safeLessons = lessons ?? [];
+  const safeCategories = categories ?? [];
 
   const loadStats = useCallback(async () => {
     try {
@@ -40,7 +48,7 @@ function DashboardPage() {
   }, [loadStats]);
 
   const statusBreakdown = useMemo(() => {
-    return lessons.reduce(
+    return (safeLessons ?? []).reduce(
       (acc, lesson) => {
         const status = lesson.status ?? 'draft';
         if (!acc[status]) acc[status] = 0;
@@ -49,17 +57,20 @@ function DashboardPage() {
       },
       { published: 0, draft: 0, archived: 0 },
     );
-  }, [lessons]);
+  }, [safeLessons]);
 
-  const totalViews = useMemo(() => lessons.reduce((sum, lesson) => sum + (lesson.views_count ?? 0), 0), [lessons]);
+  const totalViews = useMemo(
+    () => (safeLessons ?? []).reduce((sum, lesson) => sum + (lesson.views_count ?? 0), 0),
+    [safeLessons],
+  );
 
   const mostPopular = useMemo(() => {
-    if (lessons.length === 0) return null;
-    return [...lessons].sort((a, b) => (b.views_count ?? 0) - (a.views_count ?? 0))[0];
-  }, [lessons]);
+    if ((safeLessons ?? []).length === 0) return null;
+    return [...(safeLessons ?? [])].sort((a, b) => (b.views_count ?? 0) - (a.views_count ?? 0))[0];
+  }, [safeLessons]);
 
   const categoryBuckets = useMemo(() => {
-    const buckets = lessons.reduce((acc, lesson) => {
+    const buckets = (safeLessons ?? []).reduce((acc, lesson) => {
       const key = lesson.categories?.name ?? 'Uncategorized';
       acc[key] = (acc[key] ?? 0) + 1;
       return acc;
@@ -69,21 +80,21 @@ function DashboardPage() {
       .map(([name, count], index) => ({
         name,
         count,
-        percent: lessons.length > 0 ? Math.round((count / lessons.length) * 100) : 0,
+        percent: (safeLessons ?? []).length > 0 ? Math.round((count / (safeLessons ?? []).length) * 100) : 0,
         color: PIE_COLORS[index % PIE_COLORS.length],
       }))
       .sort((a, b) => b.count - a.count);
-  }, [lessons]);
+  }, [safeLessons]);
 
   const topLessons = useMemo(() => {
-    return [...lessons]
+    return [...(safeLessons ?? [])]
       .sort((a, b) => (b.views_count ?? 0) - (a.views_count ?? 0))
       .slice(0, 10)
       .map((lesson, index, array) => ({
         ...lesson,
         width: array[0]?.views_count ? ((lesson.views_count ?? 0) / array[0].views_count) * 100 : 0,
       }));
-  }, [lessons]);
+  }, [safeLessons]);
 
   const viewsByDay = useMemo(() => {
     const points = [];
@@ -99,8 +110,9 @@ function DashboardPage() {
       points.push({ date: key, views: 0 });
     }
 
-    lessons.forEach((lesson) => {
-      const dateKey = new Date(lesson.updated_at ?? lesson.created_at ?? Date.now()).toISOString().slice(0, 10);
+    (safeLessons ?? []).forEach((lesson) => {
+      const dateKey = safeDateKey(lesson.updated_at || lesson.created_at || Date.now());
+      if (!dateKey) return;
       if (!map.has(dateKey)) return;
       map.set(dateKey, map.get(dateKey) + (lesson.views_count ?? 0));
     });
@@ -110,18 +122,22 @@ function DashboardPage() {
       label: new Date(point.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
       views: map.get(point.date),
     }));
-  }, [lessons]);
+  }, [safeLessons]);
 
   const lineMax = useMemo(() => Math.max(...viewsByDay.map((point) => point.views), 1), [viewsByDay]);
 
   const recentPublished = useMemo(() => {
-    return [...lessons]
+    return [...(safeLessons ?? [])]
       .filter((lesson) => lesson.status === 'published')
       .sort((a, b) => new Date(b.updated_at ?? b.created_at).getTime() - new Date(a.updated_at ?? a.created_at).getTime())
       .slice(0, 5);
-  }, [lessons]);
+  }, [safeLessons]);
 
-  const isEmpty = !loading && lessons.length === 0;
+  const isEmpty = !loading && (safeLessons ?? []).length === 0;
+
+  if (loading) {
+    return <div className="h-64 animate-pulse rounded-xl bg-slate-100" />;
+  }
 
   return (
     <div className="space-y-6">
@@ -144,7 +160,7 @@ function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <StatCard
           title="Total Lessons"
-          value={lessons.length}
+          value={(safeLessons ?? []).length}
           icon={<BookIcon />}
           color="text-blue-600"
           bg="bg-blue-50"
@@ -162,7 +178,7 @@ function DashboardPage() {
         />
         <StatCard
           title="Total Categories"
-          value={categories.length}
+          value={(safeCategories ?? []).length}
           icon={<CategoryIcon />}
           color="text-violet-600"
           bg="bg-violet-50"
@@ -201,7 +217,7 @@ function DashboardPage() {
             </ChartCard>
 
             <ChartCard title="Lessons by Status" subtitle="Published, draft, and archived totals.">
-              <StatusBars breakdown={statusBreakdown} total={lessons.length} loading={loading} />
+              <StatusBars breakdown={statusBreakdown} total={(safeLessons ?? []).length} loading={loading} />
             </ChartCard>
           </div>
 
