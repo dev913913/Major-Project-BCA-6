@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import LessonCard from '../components/LessonCard';
+import ErrorState from '../components/ErrorState';
 import { useSeo } from '../components/Seo';
 import { fetchPublishedLessons } from '../services/lessonService';
 import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
@@ -49,7 +50,10 @@ function LessonsPage() {
     }
   }, [query, activeCategory, sortBy, searchParamsString, setSearchParams]);
 
-  useEffect(() => {
+  const loadLessons = useCallback(() => {
+    setLoading(true);
+    setError('');
+
     fetchPublishedLessons()
       .then(setLessons)
       .catch((err) => {
@@ -59,9 +63,24 @@ function LessonsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    loadLessons();
+  }, [loadLessons]);
+
   const categories = useMemo(() => {
     const names = new Set(lessons.map((lesson) => lesson.categories?.name).filter(Boolean));
     return ['all', ...names];
+  }, [lessons]);
+
+  const categoryCounts = useMemo(() => {
+    const counts = new Map();
+    lessons.forEach((lesson) => {
+      const name = lesson.categories?.name;
+      if (name) {
+        counts.set(name, (counts.get(name) ?? 0) + 1);
+      }
+    });
+    return counts;
   }, [lessons]);
 
   const filteredLessons = useMemo(() => {
@@ -125,7 +144,9 @@ function LessonsPage() {
                   activeCategory === category ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
-                {category === 'all' ? 'All categories' : category}
+                {category === 'all'
+                  ? `All categories (${lessons.length})`
+                  : `${category} (${categoryCounts.get(category) ?? 0})`}
               </button>
             ))}
           </div>
@@ -163,7 +184,7 @@ function LessonsPage() {
         </div>
       </header>
 
-      {error && <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">{error}</p>}
+      {error && <ErrorState message={error} onRetry={loadLessons} />}
 
       {loading ? (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -175,7 +196,14 @@ function LessonsPage() {
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
           <p className="text-4xl" aria-hidden="true">📚</p>
           <h2 className="mt-3 text-2xl font-bold">No lessons found</h2>
-          <p className="mt-2 text-slate-500">Try different search or filter</p>
+          <p className="mt-2 text-slate-500">Try a different search or filter, or reset your selections.</p>
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="mt-6 inline-flex rounded-full bg-indigo-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
+          >
+            Reset filters
+          </button>
         </div>
       ) : (
         <div className="grid animate-in gap-5 md:grid-cols-2 xl:grid-cols-3">

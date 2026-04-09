@@ -112,11 +112,11 @@ function Header() {
             </NavLink>
           )}
           {!user ? (
-            <NavLink to="/login" onClick={() => setMobileOpen(false)} className="block text-sm font-medium text-indigo-600">
+            <NavLink to="/login" onClick={() => setMobileOpen(false)} className={mobileNavItem({ isActive: location.pathname === '/login' })}>
               Login
             </NavLink>
           ) : (
-            <button type="button" onClick={handleSignOut} className="block text-sm font-medium text-slate-700">
+            <button type="button" onClick={handleSignOut} className="block rounded-lg px-2 py-1.5 text-sm font-medium transition text-slate-700 hover:bg-slate-100">
               Logout
             </button>
           )}
