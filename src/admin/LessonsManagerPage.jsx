@@ -8,6 +8,7 @@ import {
 } from '../services/lessonService';
 import { fetchCategories } from '../services/categoryService';
 import MarkdownRenderer from '../components/MarkdownRenderer';
+import LessonContentRenderer from '../components/LessonContentRenderer';
 import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
 
 const initialForm = {
@@ -286,7 +287,7 @@ function LessonsManagerPage() {
 
         <article className="space-y-4 rounded-lg border border-slate-100 bg-slate-50 p-4">
           <h3 className="text-2xl font-bold text-slate-900">{form.title || 'Untitled Lesson'}</h3>
-          <MarkdownRenderer content={form.content || 'Start writing to see a preview...'} />
+          <LessonContentRenderer content={form.content || 'Start writing to see a preview...'} />
 
           {mapTextareaToCodeSnippets(form.code_snippets).length > 0 && (
             <div className="space-y-3">
