@@ -40,7 +40,7 @@ function HomePage() {
   const totalViews = useMemo(() => lessons.reduce((sum, lesson) => sum + (lesson.views_count ?? 0), 0), [lessons]);
 
   return (
-    <div className="space-y-20 pb-8">
+    <div className="space-y-20 pb-10">
       <JsonLd
         id="homepage-jsonld"
         data={{
@@ -65,7 +65,7 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="space-y-6">
+      <section className="space-y-6 animate-in">
         <div className="text-center">
           <h2 className="text-3xl font-bold">Why learners love Codev</h2>
           <p className="mt-2 text-slate-600">Professional learning experience designed by Dev Kumar.</p>
@@ -77,7 +77,7 @@ function HomePage() {
             ['🧠', 'Expert Content', 'Curated by Dev Kumar to focus on real-world programming skills.'],
             ['🌍', 'Free Access', 'Quality education for everyone with accessible learning resources.'],
           ].map(([icon, title, text]) => (
-            <article key={title} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg">
+            <article key={title} className="glass-panel soft-ring rounded-2xl p-5 transition duration-300 hover:-translate-y-1 hover:shadow-xl">
               <p className="text-3xl" aria-hidden="true">{icon}</p>
               <h3 className="mt-3 text-lg font-bold">{title}</h3>
               <p className="mt-2 text-sm text-slate-600">{text}</p>
@@ -107,7 +107,7 @@ function HomePage() {
         )}
       </section>
 
-      <section className="rounded-3xl bg-gradient-to-r from-slate-900 to-slate-800 p-8 text-white">
+      <section className="rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-8 text-white shadow-xl shadow-slate-900/20">
         <div className="grid gap-4 sm:grid-cols-3">
           <Stat title="Total lessons available" value={lessons.length} />
           <Stat title="Total views across platform" value={totalViews} />
@@ -115,7 +115,7 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="rounded-3xl bg-gradient-to-r from-indigo-100 via-violet-100 to-cyan-100 p-8 text-center">
+      <section className="rounded-3xl border border-indigo-100 bg-gradient-to-r from-indigo-100 via-violet-100 to-cyan-100 p-8 text-center shadow-inner">
         <h2 className="text-3xl font-bold text-slate-900">Ready to Start Learning?</h2>
         <p className="mt-2 text-slate-600">Join thousands of learners mastering programming.</p>
         <div className="mt-5 flex flex-wrap items-center justify-center gap-4">
@@ -124,7 +124,7 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="glass-panel soft-ring rounded-2xl p-6">
         <h2 className="text-2xl font-bold">About Codev</h2>
         <p className="mt-3 text-slate-600">Codev is a modern coding education platform created by <strong>Dev Kumar</strong> to make programming approachable, practical, and inspiring for everyone.</p>
       </section>
@@ -134,7 +134,7 @@ function HomePage() {
 
 function Stat({ title, value }) {
   return (
-    <article className="rounded-2xl bg-white/10 p-5 backdrop-blur">
+    <article className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur">
       <p className="text-sm text-slate-300">{title}</p>
       <p className="mt-2 text-4xl font-black">{Number(value).toLocaleString()}</p>
     </article>
