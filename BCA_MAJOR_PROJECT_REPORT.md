@@ -8,7 +8,7 @@
 
 Codev CMS is a full-stack web application developed to deliver structured programming lessons and to simplify educational content management through a secure admin panel. The platform addresses a common challenge in digital learning systems: presenting course content in a student-friendly format while giving administrators efficient tools to create, organize, and maintain lessons. On the public side, users can browse published lessons, read detailed markdown-based tutorials, explore categories, and discover related content. On the admin side, authorized users can manage lessons, categories, media assets, and monitor basic analytics through a dashboard.
 
-The system is built with React and Vite for a fast single-page frontend, Tailwind CSS for modern responsive design, and Supabase for authentication, PostgreSQL database operations, and media storage. Features such as role-based route protection, markdown rendering with syntax-highlighted code blocks, lesson view tracking, SEO metadata handling, and category-wise organization are fully implemented. The project demonstrates practical integration of frontend and backend services for real-world educational applications, making it suitable for BCA major project submission and future production-scale enhancement.
+The system is built with React and Vite for a fast single-page frontend, Tailwind CSS for modern responsive design, and Supabase for authentication, PostgreSQL database operations, and media storage. Features such as role-based route protection, markdown rendering with syntax-highlighted code blocks, lesson view tracking, SEO metadata handling, URL-aware category filtering, lesson sorting, media management, and category-wise organization are fully implemented. I developed this project as my BCA 6th semester major project submission, and it demonstrates practical integration of frontend and backend services for real-world educational applications while leaving clear scope for future production-scale enhancement.
 
 ---
 
@@ -26,6 +26,11 @@ Codev CMS is designed to solve both needs in one integrated solution:
 
 This makes the project directly relevant for modern e-learning use cases and suitable for scalable academic and practical implementation.
 
+## Personal Motivation and Project Origin
+I, Dev Kumar, made this project as a major project for submission as a student of BCA 6th semester. The motivation for this system came from my personal teaching experience before pursuing BCA. At that time, I used to teach students and, whenever I conducted tests, I would upload question papers online and share the webpage link with students. I mainly used Blogger for that purpose.
+
+During that period, I wanted to create a better webpage that could ask MCQ questions, automatically verify answers, save test data, and share the result data with both me and my students. I was not able to build that system back then because I did not have enough web development knowledge. However, that limitation became one of the primary reasons I developed a desire to learn web development and chose to pursue BCA. Codev CMS is therefore not only an academic project, but also a practical step toward the educational web application idea that originally motivated me.
+
 ---
 
 # 4. Objectives
@@ -34,7 +39,7 @@ This makes the project directly relevant for modern e-learning use cases and sui
 2. To implement secure authentication and admin-only authorization for CMS operations.
 3. To provide CRUD operations for lessons, categories, and media resources.
 4. To enable markdown-based lesson content with syntax-highlighted code blocks.
-5. To organize lessons by categories and support quick search/filter interactions.
+5. To organize lessons by categories and support quick search, URL-based filtering, sorting, result count, and clear-filter interactions.
 6. To track lesson engagement through view count increment logic.
 7. To provide an analytics-oriented admin dashboard for operational insights.
 8. To design the system with maintainable modular React components and service layers.
@@ -44,9 +49,9 @@ This makes the project directly relevant for modern e-learning use cases and sui
 # 5. Scope of the Project
 
 ## What the System Does
-- Displays published programming lessons to public users.
-- Provides detailed lesson pages with markdown rendering and code snippet sections.
-- Shows category listings and lesson counts.
+- Displays published programming lessons to public users through home, lessons, category, and detail pages.
+- Provides detailed lesson pages with markdown rendering, syntax-highlighted code snippet sections, reading-time estimate, copy-code support, related lessons, and view tracking.
+- Shows category listings with difficulty, active lesson counts, and links to prefiltered lesson catalogs.
 - Offers admin login and protected admin routes.
 - Allows admin users to create, edit, publish/unpublish, archive, and delete lessons.
 - Allows admin users to create/update/delete categories.
@@ -55,7 +60,7 @@ This makes the project directly relevant for modern e-learning use cases and sui
 
 ## Boundaries of the System
 - No student registration/profile workflow is implemented on frontend (admin login focus).
-- No quiz, exam, certificate, or payment module is implemented.
+- No quiz, MCQ auto-evaluation, student result sharing, certificate, or payment module is implemented in the current version.
 - No advanced recommendation engine or AI personalization is present.
 - Real-time notifications/chat/forum features are not implemented.
 - Analytics are operational and aggregate-based, not deep BI/reporting.
@@ -352,13 +357,13 @@ The system uses PostgreSQL tables (Supabase public schema):
    - Hero banner, value cards, popular lesson cards, platform stats, CTA section, about section.
 
 2. **Lessons Page (`/lessons`)**
-   - Search box, category filter chips, lesson card grid, loading skeletons, empty-state UI.
+   - Search box, URL-aware category filter chips, sorting controls, result count, clear-filter action, lesson card grid, loading skeletons, and empty-state UI.
 
 3. **Lesson Detail Page (`/lesson/:id`)**
    - Back link, featured header, metadata strip, markdown content, code snippet section, scroll progress bar, related lessons section.
 
 4. **Categories Page (`/categories`)**
-   - Category cards with difficulty and lesson count; browse link.
+   - Category cards with difficulty and lesson count; browse links open the lessons page with the selected category already applied.
 
 5. **Login Page (`/login`)**
    - Admin login form with email/password and error display.
@@ -397,22 +402,23 @@ The system uses PostgreSQL tables (Supabase public schema):
 
 # 15. Limitations of the System
 
-1. No dedicated student signup/profile learning dashboard.
-2. No quiz/assessment/certification functionality.
-3. No bookmarking, comments, or community discussion features.
-4. Search/filter is client-side and may not scale for very large datasets.
-5. Analytics are basic and not event-level/time-series accurate.
-6. No automated testing suite (unit/integration/e2e) included.
-7. Category-to-lessons deep-linking is currently generic (`/lessons` only).
+1. No dedicated student signup/profile learning dashboard is implemented on the frontend.
+2. No quiz, MCQ auto-evaluation, result sharing, assessment, or certification functionality is implemented yet.
+3. No bookmarking, comments, or community discussion features are present.
+4. Search/filter is client-side and may not scale for very large datasets without server-side pagination.
+5. Analytics are basic and derived from lesson records, not event-level/time-series logs.
+6. No automated testing suite (unit/integration/e2e) is included.
+7. The app currently throws a setup error if Supabase environment variables are missing instead of showing a full guided setup screen.
+8. The footer still exposes an Admin link publicly, although protected routes prevent unauthorized access.
 
 ---
 
 # 16. Future Enhancements
 
 1. Add student account features with progress tracking and bookmarks.
-2. Implement quizzes, assignments, and auto-evaluation.
+2. Implement quizzes, MCQ tests, assignments, auto-evaluation, saved results, and result sharing for teachers and students.
 3. Add lesson completion checkpoints and certificates.
-4. Introduce advanced server-side filtering, sorting, and pagination.
+4. Introduce advanced server-side filtering, sorting, pagination, and full-text search.
 5. Add tags management in admin UI and tag-based lesson exploration.
 6. Add rich text editor with markdown preview for lesson authoring.
 7. Build advanced analytics dashboard with charts backed by actual event logs.

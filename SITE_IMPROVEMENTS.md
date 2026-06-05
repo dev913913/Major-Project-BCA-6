@@ -1,42 +1,42 @@
 # Site Improvement Review (Codev)
 
-## What needs improvement
+This file is updated to reflect the current repository state. Several earlier quick wins have already been implemented, while a few items remain recommended future work.
+
+## Implemented improvements
+
+1. **Error handling on data pages**
+   - `HomePage`, `LessonsPage`, `CategoriesPage`, and the admin dashboard now show explicit error messages when data loading fails.
+
+2. **Mobile navigation parity**
+   - The mobile header now includes conditional Login/Logout actions and Admin navigation for authorized admin users.
+
+3. **Search/filter UX for lessons**
+   - Lessons can be searched by title/content, filtered by category, sorted by newest/most viewed/title, and reset using a clear action.
+   - The page also shows a result count so users know how many lessons match the current filters.
+
+4. **Category-to-lessons journey**
+   - Category cards now link to `/lessons?category=<category-name>` so the lessons page opens with the selected category filter already applied.
+
+5. **Content loading and empty states**
+   - Public listing pages include loading skeletons, empty-state messages, and user-friendly error text.
+
+## Still recommended
 
 1. **Graceful startup when environment variables are missing**
-   - Right now the app throws at import-time when Supabase env vars are absent, which can render the app unusable instead of showing a guided setup/error screen.
-   - Recommendation: render a friendly configuration page and keep public shell/UI visible.
+   - The app still throws at import-time when `VITE_SUPABASE_URL` or `VITE_SUPABASE_ANON_KEY` is missing.
+   - Recommendation: render a friendly configuration/setup screen so the public shell remains usable during setup.
 
-2. **Error handling consistency across pages**
-   - `HomePage` and `LessonsPage` show fetch errors, but `CategoriesPage` currently has no error state and can silently fail into empty UI.
-   - Recommendation: add explicit error state + retry action to all data pages.
+2. **Footer link visibility / access control**
+   - The footer always shows an Admin link even for unauthenticated users, causing avoidable redirects/friction.
+   - Recommendation: hide the admin footer link unless the user is admin or replace it with an "Admin Login" link.
 
-3. **Navigation parity on mobile**
-   - Desktop header includes Login/Logout and conditional Admin entry, while mobile menu omits login/logout actions.
-   - Recommendation: add auth actions and clear active states in mobile nav.
+3. **Reusable error/retry components**
+   - Error states exist, but each page currently renders its own message.
+   - Recommendation: add shared `ErrorState`, `EmptyState`, and `LoadingSkeleton` components to reduce duplication.
 
-4. **Footer link visibility / access control**
-   - Footer always shows an Admin link even for unauthenticated users, causing avoidable redirects/friction.
-   - Recommendation: hide admin footer link unless user is admin or replace with "Admin Login".
+4. **React Router future-flag cleanup**
+   - If runtime warnings appear for upcoming Router v7 behavior changes, adopt the relevant future flags and test route behavior.
 
-5. **Search/filter UX for lessons**
-   - Lessons filtering supports title + category only; no sort controls, no result count, and no clear-all reset shortcut.
-   - Recommendation: add sort (newest/popular), result counter, and one-click filter reset.
-
-6. **Category-to-lessons journey**
-   - Category cards route to generic `/lessons` rather than prefiltered by selected category.
-   - Recommendation: deep-link to lessons with query param (e.g., `/lessons?category=...`) and hydrate filters from URL.
-
-7. **Content loading resilience / empty states**
-   - Several pages default to empty layouts when backend is unreachable or dataset is empty.
-   - Recommendation: standardize skeleton, empty, and error components with actionable copy.
-
-8. **Technical debt warning from React Router**
-   - Runtime shows future-flag warnings for Router v7 behavior changes.
-   - Recommendation: adopt future flags now and test route behavior to reduce upgrade risk.
-
-## Quick wins (highest impact first)
-
-1. Add a non-crashing env-missing setup screen.
-2. Add shared error/retry component and use on Categories/Home/Lessons.
-3. Improve mobile menu with auth actions.
-4. Pass selected category through URL and pre-apply filters.
+5. **Future educational workflow**
+   - The original motivation included MCQ tests, auto-verification, saved test data, and result sharing with students.
+   - Recommendation: treat quiz/assessment/result-sharing as the next major learning feature after the CMS foundation.
