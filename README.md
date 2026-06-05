@@ -1,6 +1,21 @@
 # Codev CMS
 
-Codev CMS is a full-stack lessons platform for programming content built with React, Tailwind CSS, Supabase Auth/Database/Storage, and Prism.js highlighting.
+Codev CMS is a full-stack lessons platform for programming content built with React, Tailwind CSS, Supabase Auth/Database/Storage, and Prism.js highlighting. I, Dev Kumar, developed this project as my BCA 6th semester major project submission.
+
+## Project context and motivation
+
+This repository represents my **major project for submission as a BCA 6th semester student**. The idea came from my own teaching experience before pursuing BCA. At that time, I used to teach students and, whenever I took tests, I would upload question papers online and share a webpage link with them. I mainly used Blogger for that workflow.
+
+While using Blogger, I wanted to create a more useful webpage that could ask MCQ questions, automatically verify answers, save test data, and share results with both me and my students. I could not build that system back then, but that limitation created a strong desire to learn web development. This became one of the primary reasons I chose to pursue BCA, and Codev CMS is a practical step toward that long-term goal of building better educational web applications.
+
+## Current status
+
+- Public learning pages are implemented for home, lessons, lesson details, and categories.
+- Admin-only CMS pages are implemented for dashboard analytics, lessons, categories, and media.
+- Supabase authentication, PostgreSQL tables, storage bucket policies, and lesson view tracking are documented in `supabase/schema.sql`.
+- The current version focuses on lesson publishing and content management. Quiz/MCQ auto-evaluation, student result sharing, and student progress tracking are planned future enhancements rather than current features.
+
+---
 
 ## 1) Use it directly in GitHub Codespaces (online)
 
@@ -74,8 +89,10 @@ VITE_SUPABASE_ANON_KEY=<your-anon-key>
 ## 4) How to use the app
 
 ### Public side
-- `/` → lists all published lessons.
-- `/lesson/:id` → lesson detail page with Markdown + Prism code highlighting.
+- `/` → home page with hero section, highlights, popular lessons, categories preview, and platform stats.
+- `/lessons` → searchable/filterable lesson catalog with category URL filters, result count, sorting, and clear action.
+- `/lesson/:id` → lesson detail page with Markdown + Prism code highlighting, reading-time estimate, code-copy support, related lessons, and automatic view tracking.
+- `/categories` → category cards with difficulty, lesson count, and deep links to filtered lessons.
 
 ### Admin side
 - `/login` → sign in using your Supabase auth credentials.
@@ -160,6 +177,7 @@ supabase/
 
 - `profiles`: user identity + role
 - `lessons`: markdown lesson content, snippets, status, category, views
-- `categories`: lesson grouping and difficulty
-- `tags`, `lesson_tags`: taxonomy
+- `categories`: lesson grouping, difficulty, and active lesson counts
+- `tags`, `lesson_tags`: taxonomy tables for future tag expansion
 - `media`: uploaded assets metadata
+- `increment_lesson_views`: RPC function used by lesson detail pages to update view counts
