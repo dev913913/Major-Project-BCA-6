@@ -21,6 +21,18 @@ const initialForm = {
 
 const PAGE_SIZE = 8;
 
+const PYTHON_PRACTICE_BLOCK = [
+  '',
+  '```python',
+  'name = "Codev learner"',
+  'print(f"Hello, {name}!")',
+  '',
+  'for number in range(1, 4):',
+  '    print(number * number)',
+  '```',
+].join('\n');
+
+
 function mapCodeSnippetsToTextarea(value) {
   if (!Array.isArray(value) || value.length === 0) return '';
 
@@ -153,6 +165,13 @@ function LessonsManagerPage() {
     }
   }
 
+  function insertPythonPracticeBlock() {
+    setForm((currentForm) => ({
+      ...currentForm,
+      content: `${currentForm.content.trimEnd()}${PYTHON_PRACTICE_BLOCK}`,
+    }));
+  }
+
   async function handleStatusChange(lesson, nextStatus) {
     if (lesson.status === nextStatus) return;
 
@@ -186,6 +205,29 @@ function LessonsManagerPage() {
 
         <label className="block">
           <span className="mb-1 block text-sm font-medium">Content (Markdown)</span>
+          <div className="mb-3 rounded-lg border border-indigo-100 bg-indigo-50 p-3 text-sm text-indigo-950">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-2">
+                <p className="font-semibold">Add a Python practice runner for readers</p>
+                <p>
+                  Put Python inside a fenced Markdown block. On the lesson page it becomes an editable browser
+                  runner with output and error display.
+                </p>
+                <pre className="overflow-x-auto rounded bg-white/80 px-3 py-2 text-xs text-slate-800">{['```python', 'print("Hello from Python")', '```'].join('\n')}</pre>
+                <p className="text-xs text-indigo-800">
+                  Tip: use this in the lesson content field. The separate Code Snippets field is best for static
+                  reference snippets.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={insertPythonPracticeBlock}
+                className="shrink-0 rounded bg-indigo-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
+              >
+                Insert example
+              </button>
+            </div>
+          </div>
           <textarea
             rows={10}
             value={form.content}
