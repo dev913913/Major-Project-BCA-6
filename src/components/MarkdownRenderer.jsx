@@ -10,6 +10,7 @@ import 'prismjs/components/prism-python';
 import 'prismjs/components/prism-css';
 import 'prismjs/components/prism-sql';
 import 'prismjs/components/prism-bash';
+import PythonRunner from './PythonRunner';
 
 const LANGUAGE_ALIASES = {
   js: 'javascript',
@@ -41,6 +42,10 @@ function CodeBlock({ className, children }) {
       return Prism.util.encode(code);
     }
   }, [code, language]);
+
+  if (language === 'python') {
+    return <PythonRunner starterCode={code} />;
+  }
 
   async function handleCopy() {
     await navigator.clipboard.writeText(code);
