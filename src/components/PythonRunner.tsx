@@ -49,7 +49,7 @@ type PythonResult = {
 };
 
 type PyProxy = {
-  toJs: (options?: { dict_converter?: ObjectConstructor }) => unknown;
+  toJs: (options?: { dict_converter?: typeof Object.fromEntries }) => unknown;
   destroy?: () => void;
 };
 
@@ -146,7 +146,7 @@ function isPyProxy(value: unknown): value is PyProxy {
 }
 
 function normalizePythonResult(value: unknown): PythonResult {
-  const converted = isPyProxy(value) ? value.toJs({ dict_converter: Object }) : value;
+  const converted = isPyProxy(value) ? value.toJs({ dict_converter: Object.fromEntries }) : value;
 
   if (typeof converted === 'object' && converted !== null) {
     const result = converted as Partial<PythonResult>;
