@@ -170,11 +170,7 @@ _stdout = io.StringIO()
 _stderr = io.StringIO()
 _error = ""
 
-try:
-    with contextlib.redirect_stdout(_stdout), contextlib.redirect_stderr(_stderr):
-        exec(__codev_user_code__, {})
-except Exception:
-    _error = traceback.format_exc()
+exec(__codev_user_code__, {"__builtins__": __builtins__})
 
 {
     "stdout": _stdout.getvalue(),
