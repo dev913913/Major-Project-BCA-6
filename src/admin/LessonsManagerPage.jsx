@@ -292,7 +292,7 @@ function LessonsManagerPage() {
             <div className="space-y-3">
               <h4 className="text-lg font-semibold text-slate-800">Code Snippets Preview</h4>
               {mapTextareaToCodeSnippets(form.code_snippets).map((snippet, index) => (
-                <MarkdownRenderer key={`preview-snippet-${index + 1}`} content={"```javascript\n" + snippet + "\n```"} />
+                <MarkdownRenderer key={`preview-snippet-${index + 1}`} content={`\`\`\`javascript\n${snippet}\n\`\`\``} />
               ))}
             </div>
           )}
