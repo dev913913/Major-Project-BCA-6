@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   createLesson,
@@ -49,6 +49,62 @@ function badgeClass(status) {
   return 'bg-amber-100 text-amber-700';
 }
 
+// Custom hook for responsive media queries (SSR-safe)
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+
+    const mediaQueryList = window.matchMedia(query);
+    
+    // Set initial value
+    setMatches(mediaQueryList.matches);
+
+    // Handler for changes
+    const handler = (e) => setMatches(e.matches);
+    
+    // Add listener (support both old and new API)
+    if (mediaQueryList.addEventListener) {
+      mediaQueryList.addEventListener('change', handler);
+    } else {
+      mediaQueryList.addListener(handler);
+    }
+
+    // Cleanup
+    return () => {
+      if (mediaQueryList.removeEventListener) {
+        mediaQueryList.removeEventListener('change', handler);
+      } else {
+        mediaQueryList.removeListener(handler);
+      }
+    };
+  }, [query]);
+
+  return matches;
+}
+
+// Memoized preview content component to avoid unnecessary re-renders
+const PreviewContent = ({ form }) => (
+  <article className="space-y-4 rounded-lg border border-slate-100 bg-slate-50 p-4">
+    <h3 className="text-2xl font-bold text-slate-900">{form.title || 'Untitled Lesson'}</h3>
+    <MarkdownRenderer content={form.content || 'Start writing to see a preview...'} />
+
+    {mapTextareaToCodeSnippets(form.code_snippets).length > 0 && (
+      <div className="space-y-3">
+        <h4 className="text-lg font-semibold text-slate-800">Code Snippets Preview</h4>
+        {mapTextareaToCodeSnippets(form.code_snippets).map((snippet, index) => (
+          <MarkdownRenderer 
+            key={`preview-snippet-${index + 1}`} 
+            content={`\`\`\`javascript\n${snippet}\n\`\`\``} 
+          />
+        ))}
+      </div>
+    )}
+  </article>
+);
+
 function LessonsManagerPage() {
   const [lessons, setLessons] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -61,11 +117,16 @@ function LessonsManagerPage() {
   const [error, setError] = useState('');
 
   // UI visibility controls
-  // On mobile we'll use activeTab to switch between panels; on larger screens all panels are visible but can be toggled.
   const [activeTab, setActiveTab] = useState('form'); // 'form' | 'preview' | 'list'
   const [showForm, setShowForm] = useState(true);
   const [showPreview, setShowPreview] = useState(true);
   const [showList, setShowList] = useState(true);
+
+  // Form reference for proper validation
+  const formRef = useRef(null);
+
+  // Responsive hook for md breakpoint (768px)
+  const isDesktop = useMediaQuery('(min-width: 768px)');
 
   const isEditing = useMemo(() => Boolean(editingId), [editingId]);
 
@@ -179,23 +240,12 @@ function LessonsManagerPage() {
     }
   }
 
-  // Helper to render preview content compactly
-  function PreviewContent() {
-    return (
-      <article className="space-y-4 rounded-lg border border-slate-100 bg-slate-50 p-4">
-        <h3 className="text-2xl font-bold text-slate-900">{form.title || 'Untitled Lesson'}</h3>
-        <MarkdownRenderer content={form.content || 'Start writing to see a preview...'} />
-
-        {mapTextareaToCodeSnippets(form.code_snippets).length > 0 && (
-          <div className="space-y-3">
-            <h4 className="text-lg font-semibold text-slate-800">Code Snippets Preview</h4>
-            {mapTextareaToCodeSnippets(form.code_snippets).map((snippet, index) => (
-              <MarkdownRenderer key={`preview-snippet-${index + 1}`} content={"```javascript\n" + snippet + "\n```"} />
-            ))}
-          </div>
-        )}
-      </article>
-    );
+  // Handle mobile save button with proper form validation
+  function handleMobileSave() {
+    if (formRef.current) {
+      // Use requestSubmit() to trigger proper HTML5 validation
+      formRef.current.requestSubmit();
+    }
   }
 
   return (
@@ -211,19 +261,31 @@ function LessonsManagerPage() {
         <nav className="flex gap-2 overflow-auto pb-2">
           <button
             onClick={() => setActiveTab('form')}
-            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium ${activeTab === 'form' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700 border border-slate-200'}`}
+            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'form'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-white text-slate-700 border border-slate-200'
+            }`}
           >
             Create
           </button>
           <button
             onClick={() => setActiveTab('preview')}
-            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium ${activeTab === 'preview' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700 border border-slate-200'}`}
+            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'preview'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-white text-slate-700 border border-slate-200'
+            }`}
           >
             Preview
           </button>
           <button
             onClick={() => setActiveTab('list')}
-            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium ${activeTab === 'list' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700 border border-slate-200'}`}
+            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'list'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-white text-slate-700 border border-slate-200'
+            }`}
           >
             Lessons
           </button>
@@ -232,13 +294,13 @@ function LessonsManagerPage() {
 
       {/* Desktop / Tablet controls to toggle visibility */}
       <div className="hidden md:flex md:items-center md:justify-end md:gap-3">
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
           <input type="checkbox" checked={showForm} onChange={() => setShowForm((s) => !s)} /> Form
         </label>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
           <input type="checkbox" checked={showPreview} onChange={() => setShowPreview((s) => !s)} /> Preview
         </label>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
           <input type="checkbox" checked={showList} onChange={() => setShowList((s) => !s)} /> List
         </label>
       </div>
@@ -246,8 +308,12 @@ function LessonsManagerPage() {
       {/* Responsive layout: mobile shows single active panel; md shows 2 columns; lg shows 3 columns */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Form (left / top) */}
-        {(showForm && (activeTab === 'form' || window.innerWidth >= 768)) && (
-          <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        {showForm && (activeTab === 'form' || isDesktop) && (
+          <form
+            ref={formRef}
+            onSubmit={handleSubmit}
+            className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+          >
             <label className="block">
               <span className="mb-1 block text-sm font-medium">Title</span>
               <input
@@ -323,7 +389,7 @@ function LessonsManagerPage() {
             </label>
 
             <div className="flex flex-wrap gap-2">
-              <button type="submit" className="rounded bg-indigo-600 px-4 py-2 font-medium text-white">
+              <button type="submit" className="rounded bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700 transition-colors">
                 {isEditing ? 'Update Lesson' : 'Create Lesson'}
               </button>
               {isEditing && (
@@ -333,7 +399,7 @@ function LessonsManagerPage() {
                     setEditingId(null);
                     setForm(initialForm);
                   }}
-                  className="rounded bg-slate-200 px-4 py-2 font-medium text-slate-700"
+                  className="rounded bg-slate-200 px-4 py-2 font-medium text-slate-700 hover:bg-slate-300 transition-colors"
                 >
                   Cancel
                 </button>
@@ -343,32 +409,29 @@ function LessonsManagerPage() {
                   to={`/lesson/${editingId}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded bg-slate-900 px-4 py-2 font-medium text-white"
+                  className="rounded bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-800 transition-colors"
                 >
                   Open Preview Page
                 </Link>
               )}
             </div>
-
-            {/* Mobile sticky action bar */}
-            <div className="md:hidden" />
           </form>
         )}
 
         {/* Preview (middle) */}
-        {(showPreview && (activeTab === 'preview' || window.innerWidth >= 768)) && (
+        {showPreview && (activeTab === 'preview' || isDesktop) && (
           <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-semibold">Live Preview</h2>
               <p className="text-sm text-slate-500">{isEditing ? 'Previewing current lesson edits.' : 'Previewing lesson draft before publishing.'}</p>
             </div>
 
-            <PreviewContent />
+            <PreviewContent form={form} />
           </section>
         )}
 
         {/* List (right) */}
-        {(showList && (activeTab === 'list' || window.innerWidth >= 768)) && (
+        {showList && (activeTab === 'list' || isDesktop) && (
           <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <input
@@ -423,7 +486,7 @@ function LessonsManagerPage() {
                           <div className="flex flex-wrap gap-2">
                             <button
                               type="button"
-                              className="rounded bg-amber-100 px-3 py-1 text-amber-800"
+                              className="rounded bg-amber-100 px-3 py-1 text-amber-800 hover:bg-amber-200 transition-colors"
                               onClick={() => handleEdit(lesson)}
                             >
                               Edit
@@ -432,14 +495,14 @@ function LessonsManagerPage() {
                               to={`/lesson/${lesson.id}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="rounded bg-slate-100 px-3 py-1 text-slate-700"
+                              className="rounded bg-slate-100 px-3 py-1 text-slate-700 hover:bg-slate-200 transition-colors"
                             >
                               {lesson.status === 'published' ? 'View' : 'Preview'}
                             </Link>
                             {lesson.status !== 'published' && (
                               <button
                                 type="button"
-                                className="rounded bg-emerald-100 px-3 py-1 text-emerald-800"
+                                className="rounded bg-emerald-100 px-3 py-1 text-emerald-800 hover:bg-emerald-200 transition-colors"
                                 onClick={() => handleStatusChange(lesson, 'published')}
                               >
                                 Publish
@@ -448,7 +511,7 @@ function LessonsManagerPage() {
                             {lesson.status !== 'archived' && (
                               <button
                                 type="button"
-                                className="rounded bg-slate-200 px-3 py-1 text-slate-700"
+                                className="rounded bg-slate-200 px-3 py-1 text-slate-700 hover:bg-slate-300 transition-colors"
                                 onClick={() => handleStatusChange(lesson, 'archived')}
                               >
                                 Archive
@@ -457,7 +520,7 @@ function LessonsManagerPage() {
                             {lesson.status !== 'draft' && (
                               <button
                                 type="button"
-                                className="rounded bg-indigo-100 px-3 py-1 text-indigo-700"
+                                className="rounded bg-indigo-100 px-3 py-1 text-indigo-700 hover:bg-indigo-200 transition-colors"
                                 onClick={() => handleStatusChange(lesson, 'draft')}
                               >
                                 Move to Draft
@@ -465,7 +528,7 @@ function LessonsManagerPage() {
                             )}
                             <button
                               type="button"
-                              className="rounded bg-red-100 px-3 py-1 text-red-700"
+                              className="rounded bg-red-100 px-3 py-1 text-red-700 hover:bg-red-200 transition-colors"
                               onClick={() => handleDelete(lesson.id)}
                             >
                               Delete
@@ -484,16 +547,18 @@ function LessonsManagerPage() {
               <div className="space-x-2">
                 <button
                   type="button"
-                  className="rounded border border-slate-300 px-3 py-1 disabled:opacity-50"
+                  className="rounded border border-slate-300 px-3 py-1 disabled:opacity-50 hover:bg-slate-50 transition-colors"
                   disabled={page <= 1}
                   onClick={() => setPage((prev) => prev - 1)}
                 >
                   Prev
                 </button>
-                <span className="text-sm text-slate-600">Page {page} / {totalPages}</span>
+                <span className="text-sm text-slate-600">
+                  Page {page} / {totalPages}
+                </span>
                 <button
                   type="button"
-                  className="rounded border border-slate-300 px-3 py-1 disabled:opacity-50"
+                  className="rounded border border-slate-300 px-3 py-1 disabled:opacity-50 hover:bg-slate-50 transition-colors"
                   disabled={page >= totalPages}
                   onClick={() => setPage((prev) => prev + 1)}
                 >
@@ -512,21 +577,19 @@ function LessonsManagerPage() {
             <div className="text-sm text-slate-700">{isEditing ? 'Editing lesson' : 'Create new lesson'}</div>
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={() => {
                   setEditingId(null);
                   setForm(initialForm);
                 }}
-                className="rounded bg-slate-200 px-3 py-2 text-sm font-medium"
+                className="rounded bg-slate-200 px-3 py-2 text-sm font-medium hover:bg-slate-300 transition-colors"
               >
                 Reset
               </button>
               <button
-                onClick={(e) => {
-                  // emulate submit
-                  const fakeEvent = { preventDefault: () => {} };
-                  handleSubmit(fakeEvent);
-                }}
-                className="rounded bg-indigo-600 px-3 py-2 text-sm font-medium text-white"
+                type="button"
+                onClick={handleMobileSave}
+                className="rounded bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
               >
                 {isEditing ? 'Update' : 'Save'}
               </button>
