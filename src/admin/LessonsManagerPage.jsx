@@ -21,6 +21,13 @@ const initialForm = {
 
 const PAGE_SIZE = 8;
 
+/**
+ * Converts an array of code snippet objects or strings into a single textarea
+ * string, with individual snippets separated by `---` delimiter lines.
+ *
+ * @param {Array<string|{code?: string, content?: string}>} value - Array of snippet strings or objects.
+ * @returns {string} A single string with snippets joined by `\n\n---\n\n`, or an empty string.
+ */
 function mapCodeSnippetsToTextarea(value) {
   if (!Array.isArray(value) || value.length === 0) return '';
 
@@ -34,6 +41,13 @@ function mapCodeSnippetsToTextarea(value) {
     .join('\n\n---\n\n');
 }
 
+/**
+ * Splits a textarea string of code snippets (separated by `---` delimiter lines)
+ * into an array of trimmed, non-empty snippet strings.
+ *
+ * @param {string} value - Raw textarea value containing snippets separated by `---`.
+ * @returns {string[]} Array of trimmed code snippet strings.
+ */
 function mapTextareaToCodeSnippets(value) {
   if (!value.trim()) return [];
 
@@ -43,13 +57,25 @@ function mapTextareaToCodeSnippets(value) {
     .filter(Boolean);
 }
 
+/**
+ * Returns the Tailwind CSS class string for a lesson status badge.
+ *
+ * @param {'published'|'archived'|'draft'} status - The lesson's publication status.
+ * @returns {string} Tailwind CSS background and text color classes for the badge.
+ */
 function badgeClass(status) {
   if (status === 'published') return 'bg-emerald-100 text-emerald-700';
   if (status === 'archived') return 'bg-slate-200 text-slate-700';
   return 'bg-amber-100 text-amber-700';
 }
 
-// Custom hook for responsive media queries (SSR-safe)
+/**
+ * Custom React hook that tracks whether a CSS media query currently matches.
+ * Safe to use in SSR environments — defaults to `false` on the server.
+ *
+ * @param {string} query - A valid CSS media query string (e.g. `'(min-width: 768px)'`).
+ * @returns {boolean} `true` when the media query matches, `false` otherwise.
+ */
 function useMediaQuery(query) {
   const [matches, setMatches] = useState(false);
 
@@ -85,7 +111,18 @@ function useMediaQuery(query) {
   return matches;
 }
 
-// Memoized preview content component to avoid unnecessary re-renders
+/**
+ * Renders a read-only preview of the lesson being authored, including the title,
+ * Markdown body, and any code snippets. Defined outside the parent component so
+ * React does not recreate it on every render.
+ *
+ * @param {Object} props
+ * @param {Object} props.form - Current lesson form state.
+ * @param {string} props.form.title - Lesson title.
+ * @param {string} props.form.content - Lesson body in Markdown.
+ * @param {string} props.form.code_snippets - Raw textarea value of code snippets.
+ * @returns {JSX.Element} Article element with rendered preview content.
+ */
 const PreviewContent = ({ form }) => (
   <article className="space-y-4 rounded-lg border border-slate-100 bg-slate-50 p-4">
     <h3 className="text-2xl font-bold text-slate-900">{form.title || 'Untitled Lesson'}</h3>
@@ -105,6 +142,14 @@ const PreviewContent = ({ form }) => (
   </article>
 );
 
+/**
+ * Admin page for managing lessons. Provides a responsive, tabbed interface with
+ * three panels: a lesson creation/edit form, a live Markdown preview, and a
+ * searchable/paginated list of existing lessons. On mobile a sticky bottom bar
+ * exposes quick-save and reset actions regardless of the active tab.
+ *
+ * @returns {JSX.Element} The full lessons management admin page.
+ */
 function LessonsManagerPage() {
   const [lessons, setLessons] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -130,6 +175,12 @@ function LessonsManagerPage() {
 
   const isEditing = useMemo(() => Boolean(editingId), [editingId]);
 
+  /**
+   * Fetches all lessons and categories from the API and updates component state.
+   * Sets `loading` during the request and populates `error` on failure.
+   *
+   * @returns {Promise<void>}
+   */
   async function loadData() {
     try {
       setLoading(true);
@@ -168,6 +219,14 @@ function LessonsManagerPage() {
     setPage(1);
   }, [query, statusFilter]);
 
+  /**
+   * Handles lesson form submission. Creates a new lesson or updates the lesson
+   * currently being edited, reloads the list, resets the form, and switches to
+   * the list tab on mobile.
+   *
+   * @param {React.FormEvent<HTMLFormElement>} event - The form submit event.
+   * @returns {Promise<void>}
+   */
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -197,6 +256,19 @@ function LessonsManagerPage() {
     }
   }
 
+  /**
+   * Populates the form with the given lesson's data so the admin can edit it.
+   * On mobile, switches the active tab to the form panel.
+   *
+   * @param {Object} lesson - The lesson object to edit.
+   * @param {string|number} lesson.id - Unique lesson identifier.
+   * @param {string} lesson.title - Lesson title.
+   * @param {string} lesson.content - Lesson body in Markdown.
+   * @param {Array} lesson.code_snippets - Existing code snippets array.
+   * @param {string} lesson.featured_image - URL of the featured image.
+   * @param {string|number} lesson.category_id - Associated category identifier.
+   * @param {string} lesson.status - Publication status of the lesson.
+   */
   function handleEdit(lesson) {
     setEditingId(lesson.id);
     setForm({
@@ -212,6 +284,13 @@ function LessonsManagerPage() {
     setActiveTab('form');
   }
 
+  /**
+   * Deletes the lesson with the given ID. If the deleted lesson is currently being
+   * edited, the form is reset. Reloads the lesson list on success.
+   *
+   * @param {string|number} id - The ID of the lesson to delete.
+   * @returns {Promise<void>}
+   */
   async function handleDelete(id) {
     try {
       setError('');
@@ -227,6 +306,16 @@ function LessonsManagerPage() {
     }
   }
 
+  /**
+   * Updates the publication status of a lesson. No-ops if the lesson already has
+   * the requested status. Reloads the lesson list on success.
+   *
+   * @param {Object} lesson - The lesson whose status should change.
+   * @param {string|number} lesson.id - Unique lesson identifier.
+   * @param {string} lesson.status - Current status of the lesson.
+   * @param {'draft'|'published'|'archived'} nextStatus - The desired new status.
+   * @returns {Promise<void>}
+   */
   async function handleStatusChange(lesson, nextStatus) {
     if (lesson.status === nextStatus) return;
 
@@ -240,7 +329,11 @@ function LessonsManagerPage() {
     }
   }
 
-  // Handle mobile save button with proper form validation
+  /**
+   * Triggers form submission via the DOM `requestSubmit()` API so that native
+   * HTML5 validation runs before `handleSubmit` is called. Used by the mobile
+   * sticky action bar's Save/Update button.
+   */
   function handleMobileSave() {
     if (formRef.current) {
       // Use requestSubmit() to trigger proper HTML5 validation
@@ -248,7 +341,7 @@ function LessonsManagerPage() {
     }
   }
 
-  return (
+
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Lessons</h1>
 
