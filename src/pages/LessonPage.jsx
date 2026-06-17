@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import MarkdownRenderer from '../components/MarkdownRenderer';
+import LessonContentRenderer from '../components/LessonContentRenderer';
 import LessonCard from '../components/LessonCard';
 import { JsonLd, useSeo } from '../components/Seo';
 import { fetchLessonById, fetchPublishedLessons, incrementLessonViews } from '../services/lessonService';
@@ -127,7 +128,7 @@ function LessonPage() {
 
       <div className="grid gap-8 lg:grid-cols-[1fr,280px]">
         <div className="min-w-0 space-y-6">
-          <MarkdownRenderer content={lesson.content} />
+          <LessonContentRenderer content={lesson.content} />
 
           {codeSnippets.length > 0 && (
             <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
