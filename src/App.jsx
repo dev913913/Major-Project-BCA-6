@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import ScrollToTop from './components/ScrollToTop';
 import BackToTopButton from './components/BackToTopButton';
+import { isSupabaseConfigured } from './services/supabaseClient';
 
 const HomePage = lazy(() => import('./pages/HomePage'));
 const LessonsPage = lazy(() => import('./pages/LessonsPage'));
@@ -30,6 +31,29 @@ function RouteFallback() {
 }
 
 function App() {
+  if (!isSupabaseConfigured) {
+    console.error('Supabase is not configured. Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY.');
+
+    return (
+      <div className="min-h-screen bg-slate-50 text-slate-900">
+        <main className="mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center px-4 py-20 text-center sm:px-6 lg:px-8">
+          <div className="rounded-3xl border border-red-200 bg-white p-10 shadow-sm">
+            <p className="text-5xl" aria-hidden="true">
+              ⚠️
+            </p>
+            <h1 className="mt-6 text-3xl font-black text-slate-900">Something went wrong</h1>
+            <p className="mt-4 text-left text-slate-600">
+              This site is temporarily unavailable due to database issues. Please try again later.
+            </p>
+            <p className="mt-6 text-left text-slate-600">
+              If this continues, please contact the site owner.
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <a

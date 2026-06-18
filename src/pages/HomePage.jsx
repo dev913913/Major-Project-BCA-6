@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import LessonCard from '../components/LessonCard';
+import ErrorState from '../components/ErrorState';
 import { JsonLd, useSeo } from '../components/Seo';
 import { fetchPublishedLessons } from '../services/lessonService';
 import { fetchCategories } from '../services/categoryService';
@@ -19,7 +20,10 @@ function HomePage() {
     url: typeof window !== 'undefined' ? window.location.href : undefined,
   });
 
-  useEffect(() => {
+  const loadPageData = useCallback(() => {
+    setLoading(true);
+    setError('');
+
     Promise.all([fetchPublishedLessons(), fetchCategories()])
       .then(([lessonData, categoryData]) => {
         setLessons(lessonData);
@@ -31,6 +35,10 @@ function HomePage() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadPageData();
+  }, [loadPageData]);
 
   const popularLessons = useMemo(
     () => [...lessons].sort((a, b) => (b.views_count ?? 0) - (a.views_count ?? 0)).slice(0, 6),
@@ -95,7 +103,7 @@ function HomePage() {
         {loading ? (
           <CardSkeletonGrid count={3} />
         ) : error ? (
-          <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">{error}</p>
+          <ErrorState message={error} onRetry={loadPageData} />
         ) : popularLessons.length === 0 ? (
           <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-slate-500">No published lessons yet.</p>
         ) : (

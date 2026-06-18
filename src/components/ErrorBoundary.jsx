@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { reportError } from '../utils/errorUtils';
 
 class ErrorBoundary extends Component {
@@ -14,6 +14,12 @@ class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     reportError('UI runtime crash', { error, info });
+  }
+
+  componentDidUpdate(prevProps) {
+    if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false });
+    }
   }
 
   render() {
@@ -47,4 +53,10 @@ class ErrorBoundary extends Component {
   }
 }
 
-export default ErrorBoundary;
+function RouteAwareErrorBoundary({ children }) {
+  const location = useLocation();
+
+  return <ErrorBoundary resetKey={location.pathname}>{children}</ErrorBoundary>;
+}
+
+export default RouteAwareErrorBoundary;

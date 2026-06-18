@@ -12,6 +12,12 @@ const STATUS_COLORS = {
 
 const PIE_COLORS = ['#4f46e5', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6', '#f97316'];
 
+function safeDateKey(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString().slice(0, 10);
+}
+
 function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -100,7 +106,8 @@ function DashboardPage() {
     }
 
     lessons.forEach((lesson) => {
-      const dateKey = new Date(lesson.updated_at ?? lesson.created_at ?? Date.now()).toISOString().slice(0, 10);
+      const dateKey = safeDateKey(lesson.updated_at || lesson.created_at || Date.now());
+      if (!dateKey) return;
       if (!map.has(dateKey)) return;
       map.set(dateKey, map.get(dateKey) + (lesson.views_count ?? 0));
     });

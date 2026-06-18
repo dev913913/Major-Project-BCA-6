@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { supabase } from '../services/supabaseClient';
+import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { reportError } from '../utils/errorUtils';
 
 const AuthContext = createContext(null);
@@ -25,6 +25,12 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      setProfileLoading(false);
+      return undefined;
+    }
+
     let mounted = true;
 
     supabase.auth.getSession().then(async ({ data }) => {
@@ -58,6 +64,13 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      setSession(null);
+      setProfile(null);
+      setProfileLoading(false);
+      return { error: null };
+    }
+
     const { error } = await supabase.auth.signOut({ scope: 'local' });
 
     if (error) {
@@ -79,7 +92,9 @@ export function AuthProvider({ children }) {
       isAdmin: profile?.role === 'admin',
       loading,
       profileLoading,
-      signIn: (email, password) => supabase.auth.signInWithPassword({ email, password }),
+      signIn: !isSupabaseConfigured
+        ? async () => ({ error: new Error('Supabase is not configured') })
+        : (email, password) => supabase.auth.signInWithPassword({ email, password }),
       signOut,
     }),
     [session, profile, loading, profileLoading, signOut],
