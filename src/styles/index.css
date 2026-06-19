@@ -5,21 +5,50 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: 'Inter', sans-serif;
-  @apply bg-slate-50 text-slate-900;
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    @apply bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-900 antialiased;
+    background-attachment: fixed;
+  }
+
+  html,
+  body,
+  #root {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    @apply bg-indigo-100 text-indigo-900;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(79 70 229);
+    outline-offset: 2px;
+  }
 }
 
-html,
-body,
-#root {
-  max-width: 100%;
-  overflow-x: hidden;
-}
+@layer components {
+  .glass-panel {
+    @apply rounded-2xl border border-white/60 bg-white/70 shadow-lg shadow-slate-900/5 backdrop-blur-md;
+  }
 
-:focus-visible {
-  outline: 2px solid rgb(79 70 229);
-  outline-offset: 2px;
+  .soft-ring {
+    @apply ring-1 ring-slate-200/70;
+  }
+
+  .modern-link {
+    @apply transition-colors duration-200 hover:text-indigo-600;
+  }
 }
 
 .animate-in {

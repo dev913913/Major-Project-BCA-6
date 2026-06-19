@@ -3,7 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const navItem = ({ isActive }) =>
-  `text-sm font-medium transition ${isActive ? 'text-indigo-600' : 'text-slate-700 hover:text-indigo-600'}`;
+  `rounded-lg px-2 py-1 text-sm font-medium transition ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-100 hover:text-indigo-600'}`;
 const mobileNavItem = ({ isActive }) =>
   `block rounded-lg px-2 py-1.5 text-sm font-medium transition ${
     isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-100'
@@ -47,16 +47,16 @@ function Header() {
   }
 
   return (
-    <header className={`sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur transition ${scrolled ? 'shadow-sm' : ''}`}>
+    <header className={`sticky top-0 z-50 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl transition ${scrolled ? 'shadow-lg shadow-slate-900/5' : ''}`}>
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         <Link to="/" className="flex flex-col leading-tight">
-          <span className="text-xl font-black tracking-tight text-indigo-600">Codev</span>
+          <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-xl font-black tracking-tight text-transparent">Codev</span>
           <span className="text-xs text-slate-500">by Dev Kumar</span>
         </Link>
 
         <button
           type="button"
-          className="rounded-lg border border-slate-200 px-3 py-1 text-sm md:hidden"
+          className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm shadow-sm transition hover:bg-slate-50 md:hidden"
           onClick={() => setMobileOpen((prev) => !prev)}
           aria-expanded={mobileOpen}
           aria-controls="mobile-navigation"
@@ -65,7 +65,7 @@ function Header() {
           ☰
         </button>
 
-        <nav className="hidden items-center gap-5 md:flex">
+        <nav className="hidden items-center gap-2 md:flex">
           <NavLink to="/" className={navItem}>
             Home
           </NavLink>
@@ -81,11 +81,11 @@ function Header() {
             </NavLink>
           )}
           {!user ? (
-            <NavLink to="/login" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700">
+            <NavLink to="/login" className="rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-indigo-600/25 transition hover:-translate-y-0.5 hover:from-indigo-700 hover:to-violet-700">
               Login
             </NavLink>
           ) : (
-            <button type="button" className="rounded-lg bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-700" onClick={handleSignOut}>
+            <button type="button" className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" onClick={handleSignOut}>
               Logout
             </button>
           )}
