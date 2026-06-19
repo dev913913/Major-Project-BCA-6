@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 function Footer() {
+  const { isAdmin } = useAuth();
+
   return (
     <footer className="mt-16 border-t border-slate-200 bg-white">
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
@@ -14,7 +17,7 @@ function Footer() {
             <Link to="/">Home</Link>
             <Link to="/lessons">Lessons</Link>
             <Link to="/categories">Categories</Link>
-            <Link to="/admin">Admin</Link>
+            {isAdmin && <Link to="/admin">Admin</Link>}
           </div>
           <p className="text-xs">Social: LinkedIn · <a href="https://github.com/dev913913">GitHub</a> · YouTube</p>
         </div>

@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import ErrorState from '../components/ErrorState';
 import { useSeo } from '../components/Seo';
 import { fetchCategories } from '../services/categoryService';
 import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
@@ -16,7 +17,10 @@ function CategoriesPage() {
     url: typeof window !== 'undefined' ? window.location.href : undefined,
   });
 
-  useEffect(() => {
+  const loadCategories = useCallback(() => {
+    setLoading(true);
+    setError('');
+
     fetchCategories()
       .then(setCategories)
       .catch((err) => {
@@ -26,6 +30,10 @@ function CategoriesPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
+
   return (
     <section className="space-y-6">
       <header>
@@ -33,7 +41,7 @@ function CategoriesPage() {
         <p className="mt-2 text-slate-600">Explore learning paths organized by topic.</p>
       </header>
 
-      {error && <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">{error}</p>}
+      {error && <ErrorState message={error} onRetry={loadCategories} />}
 
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

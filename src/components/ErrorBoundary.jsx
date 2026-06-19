@@ -16,6 +16,12 @@ class ErrorBoundary extends Component {
     reportError('UI runtime crash', { error, info });
   }
 
+  componentDidUpdate(prevProps) {
+    if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false });
+    }
+  }
+
   render() {
     if (!this.state.hasError) {
       return this.props.children;
