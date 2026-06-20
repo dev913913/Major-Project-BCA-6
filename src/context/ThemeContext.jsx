@@ -14,7 +14,7 @@ function getInitialTheme() {
     const storedTheme = window.localStorage.getItem(STORAGE_KEY);
     if (storedTheme === 'light' || storedTheme === 'dark') return storedTheme;
   } catch {
-    // localStorage unavailable – fall back to system preference
+    return 'light';
   }
   return getSystemTheme();
 }
@@ -26,7 +26,11 @@ export function ThemeProvider({ children }) {
     const root = document.documentElement;
     root.classList.toggle('dark', theme === 'dark');
     root.style.colorScheme = theme;
-    window.localStorage.setItem(STORAGE_KEY, theme);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, theme);
+    } catch {
+      // localStorage unavailable in restricted environments
+    }
   }, [theme]);
 
   const value = useMemo(() => ({
