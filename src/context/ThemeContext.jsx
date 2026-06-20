@@ -10,8 +10,12 @@ function getSystemTheme() {
 
 function getInitialTheme() {
   if (typeof window === 'undefined') return 'light';
-  const storedTheme = window.localStorage.getItem(STORAGE_KEY);
-  if (storedTheme === 'light' || storedTheme === 'dark') return storedTheme;
+  try {
+    const storedTheme = window.localStorage.getItem(STORAGE_KEY);
+    if (storedTheme === 'light' || storedTheme === 'dark') return storedTheme;
+  } catch {
+    // localStorage unavailable – fall back to system preference
+  }
   return getSystemTheme();
 }
 
