@@ -1,13 +1,31 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 const navItem = ({ isActive }) =>
-  `text-sm font-medium transition ${isActive ? 'text-indigo-600' : 'text-slate-700 hover:text-indigo-600'}`;
+  `text-sm font-medium transition ${isActive ? 'text-indigo-600 dark:text-indigo-300' : 'text-slate-700 hover:text-indigo-600 dark:text-slate-200 dark:hover:text-indigo-300'}`;
 const mobileNavItem = ({ isActive }) =>
   `block rounded-lg px-2 py-1.5 text-sm font-medium transition ${
-    isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-100'
+    isActive ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-200' : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'
   }`;
+
+
+function ThemeToggle({ isDark, onToggle, compact = false }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-100 dark:hover:border-indigo-500 dark:hover:text-indigo-300 ${compact ? 'px-2.5' : ''}`}
+      aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+      aria-pressed={isDark}
+      title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+    >
+      <span aria-hidden="true">{isDark ? '☾' : '☀'}</span>
+      {!compact && <span>{isDark ? 'Dark' : 'Light'}</span>}
+    </button>
+  );
+}
 
 function Header() {
   const { user, isAdmin, signOut } = useAuth();
@@ -15,6 +33,7 @@ function Header() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { isDark, toggleTheme } = useTheme();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -54,18 +73,22 @@ function Header() {
           <span className="text-xs text-slate-500">by Dev Kumar</span>
         </Link>
 
-        <button
-          type="button"
-          className="rounded-lg border border-slate-200 px-3 py-1 text-sm md:hidden"
-          onClick={() => setMobileOpen((prev) => !prev)}
-          aria-expanded={mobileOpen}
-          aria-controls="mobile-navigation"
-          aria-label="Toggle navigation menu"
-        >
-          ☰
-        </button>
+        <div className="flex items-center gap-2 md:hidden">
+          <ThemeToggle isDark={isDark} onToggle={toggleTheme} compact />
+          <button
+            type="button"
+            className="rounded-lg border border-slate-200 px-3 py-1 text-sm transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:text-slate-100 dark:hover:border-indigo-500 dark:hover:text-indigo-300"
+            onClick={() => setMobileOpen((prev) => !prev)}
+            aria-expanded={mobileOpen}
+            aria-controls="mobile-navigation"
+            aria-label="Toggle navigation menu"
+          >
+            ☰
+          </button>
+        </div>
 
         <nav className="hidden items-center gap-5 md:flex">
+          <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
           <NavLink to="/" className={navItem}>
             Home
           </NavLink>
