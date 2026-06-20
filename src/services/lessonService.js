@@ -1,5 +1,37 @@
 import { supabase } from './supabaseClient';
 
+function normalizeText(value, fallback = '') {
+  if (typeof value === 'string') return value;
+  if (value == null) return fallback;
+  return String(value);
+}
+
+function normalizeLesson(lesson) {
+  if (!lesson || typeof lesson !== 'object') return null;
+
+  const category =
+    lesson.categories && typeof lesson.categories === 'object' && !Array.isArray(lesson.categories)
+      ? {
+          ...lesson.categories,
+          name: normalizeText(lesson.categories.name, 'General'),
+          difficulty: normalizeText(lesson.categories.difficulty, ''),
+        }
+      : null;
+
+  return {
+    ...lesson,
+    title: normalizeText(lesson.title, 'Untitled lesson'),
+    content: normalizeText(lesson.content, ''),
+    featured_image: typeof lesson.featured_image === 'string' ? lesson.featured_image : '',
+    status: typeof lesson.status === 'string' ? lesson.status : 'draft',
+    views_count: Number.isFinite(Number(lesson.views_count)) ? Number(lesson.views_count) : 0,
+    created_at: typeof lesson.created_at === 'string' ? lesson.created_at : null,
+    updated_at: typeof lesson.updated_at === 'string' ? lesson.updated_at : null,
+    code_snippets: Array.isArray(lesson.code_snippets) ? lesson.code_snippets : [],
+    categories: category,
+  };
+}
+
 export async function fetchPublishedLessons() {
   const { data, error } = await supabase
     .from('lessons')
@@ -8,7 +40,7 @@ export async function fetchPublishedLessons() {
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []).map(normalizeLesson).filter(Boolean);
 }
 
 export async function fetchLessonById(id) {
@@ -19,7 +51,7 @@ export async function fetchLessonById(id) {
     .single();
 
   if (error) throw error;
-  return data;
+  return normalizeLesson(data);
 }
 
 export async function incrementLessonViews(lessonId) {
@@ -37,7 +69,7 @@ export async function fetchAllLessons() {
     .order('updated_at', { ascending: false });
 
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []).map(normalizeLesson).filter(Boolean);
 }
 
 export async function createLesson(payload) {
