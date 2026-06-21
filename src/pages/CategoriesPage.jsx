@@ -30,35 +30,35 @@ function CategoriesPage() {
     <section className="space-y-6">
       <header>
         <h1 className="text-4xl font-black">Categories</h1>
-        <p className="mt-2 text-slate-600">Explore learning paths organized by topic.</p>
+        <p className="mt-2 text-slate-600 dark:text-slate-300">Explore learning paths organized by topic.</p>
       </header>
 
-      {error && <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">{error}</p>}
+      {error && <p className="rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/15 p-4 text-red-700 dark:text-red-300">{error}</p>}
 
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
-            <div key={index} className="h-28 animate-pulse rounded-xl bg-slate-100" />
+            <div key={index} className="h-28 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" />
           ))}
         </div>
       ) : categories.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
+        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-10 text-center">
           <p className="text-4xl" aria-hidden="true">
             🗂️
           </p>
           <h2 className="mt-3 text-2xl font-bold">No categories yet</h2>
-          <p className="mt-2 text-slate-500">Please check back after new content is published.</p>
+          <p className="mt-2 text-slate-500 dark:text-slate-400">Please check back after new content is published.</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {categories.map((category) => (
-            <article key={category.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <article key={category.id} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
               <h2 className="text-xl font-bold">{category.name}</h2>
-              <p className="mt-2 text-sm text-slate-600">Difficulty: {category.difficulty}</p>
-              <p className="text-sm text-slate-600">Lessons: {category.lesson_count}</p>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Difficulty: {category.difficulty}</p>
+              <p className="text-sm text-slate-600 dark:text-slate-300">Lessons: {category.lesson_count}</p>
               <Link
                 to={`/lessons?category=${encodeURIComponent(category.name)}`}
-                className="mt-3 inline-block text-sm font-semibold text-indigo-600"
+                className="mt-3 inline-block text-sm font-semibold text-indigo-600 dark:text-indigo-300"
               >
                 Browse lessons →
               </Link>

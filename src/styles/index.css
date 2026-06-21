@@ -51,3 +51,45 @@ body,
     scroll-behavior: auto !important;
   }
 }
+
+@layer base {
+  html.dark {
+    background: #020617;
+  }
+
+  html.dark body {
+    @apply bg-slate-950 text-slate-100 antialiased;
+  }
+
+  html.dark :focus-visible {
+    outline-color: rgb(129 140 248);
+  }
+
+  html.dark input,
+  html.dark textarea,
+  html.dark select {
+    @apply border-slate-700 bg-slate-950 text-slate-100;
+  }
+
+  html.dark input::placeholder,
+  html.dark textarea::placeholder {
+    color: rgb(100 116 139);
+  }
+
+  html.dark option {
+    @apply bg-slate-950 text-slate-100;
+  }
+}
+
+@layer components {
+  html.dark .prose {
+    @apply prose-invert;
+  }
+
+  html.dark .shadow-sm,
+  html.dark .shadow,
+  html.dark .shadow-lg,
+  html.dark .shadow-xl {
+    box-shadow: 0 18px 45px rgb(0 0 0 / 0.32);
+  }
+}

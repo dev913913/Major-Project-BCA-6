@@ -2,14 +2,14 @@ import { Link } from 'react-router-dom';
 
 function Footer() {
   return (
-    <footer className="mt-16 border-t border-slate-200 bg-white">
+    <footer className="mt-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">Codev - Created by Dev Kumar</h2>
-          <p className="mt-2 text-sm text-slate-600">A modern learning platform for mastering programming through practical lessons.</p>
-          <p className="mt-3 text-xs text-slate-500">© 2026 Dev Kumar. All rights reserved.</p>
+          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Codev - Created by Dev Kumar</h2>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">A modern learning platform for mastering programming through practical lessons.</p>
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">© 2026 Dev Kumar. All rights reserved.</p>
         </div>
-        <div className="flex flex-col gap-2 text-sm text-slate-600 lg:items-end">
+        <div className="flex flex-col gap-2 text-sm text-slate-600 dark:text-slate-300 lg:items-end">
           <div className="flex flex-wrap gap-3">
             <Link to="/">Home</Link>
             <Link to="/lessons">Lessons</Link>
