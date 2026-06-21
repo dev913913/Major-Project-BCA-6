@@ -115,7 +115,7 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="rounded-3xl bg-gradient-to-r from-indigo-100 via-violet-100 to-cyan-100 p-8 text-center">
+      <section className="rounded-3xl bg-gradient-to-r from-indigo-100 via-violet-100 to-cyan-100 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 p-8 text-center shadow-sm dark:border dark:border-indigo-500/20 dark:shadow-indigo-950/30">
         <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Ready to Start Learning?</h2>
         <p className="mt-2 text-slate-600 dark:text-slate-300">Join thousands of learners mastering programming.</p>
         <div className="mt-5 flex flex-wrap items-center justify-center gap-4">
