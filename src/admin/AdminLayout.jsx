@@ -19,7 +19,7 @@ function AdminLayout() {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `block rounded px-3 py-2 ${isActive ? 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-200' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100'}`
+                `block rounded px-3 py-2 ${isActive ? 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-200' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'}`
               }
             >
               {item.label}

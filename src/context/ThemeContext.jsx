@@ -48,7 +48,12 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     const handleStorage = (event) => {
-      if (event.key !== STORAGE_KEY || !THEMES.has(event.newValue)) return;
+      if (event.key !== STORAGE_KEY) return;
+      if (event.newValue === null) {
+        setTheme(getSystemTheme());
+        return;
+      }
+      if (!THEMES.has(event.newValue)) return;
       setTheme(event.newValue);
     };
 

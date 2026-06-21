@@ -222,7 +222,7 @@ function DashboardPage() {
                   <Link
                     key={lesson.id}
                     to="/admin/lessons"
-                    className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-2 transition hover:border-indigo-300 hover:bg-indigo-50"
+                    className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-2 transition hover:border-indigo-300 hover:bg-indigo-50 dark:hover:border-indigo-700 dark:hover:bg-indigo-950"
                     title="Open lesson manager to edit"
                   >
                     <div>
