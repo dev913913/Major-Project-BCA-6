@@ -94,7 +94,7 @@ function Header() {
           <NavLink to="/lessons" className={navItem}>
             Lessons
           </NavLink>
-          <NavLink to="/categories" className={navLink}>
+          <NavLink to="/categories" className={navItem}>
             Categories
           </NavLink>
           {isAdmin && (
