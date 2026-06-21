@@ -44,9 +44,9 @@ function mapTextareaToCodeSnippets(value) {
 }
 
 function badgeClass(status) {
-  if (status === 'published') return 'bg-emerald-100 text-emerald-700';
-  if (status === 'archived') return 'bg-slate-200 text-slate-700';
-  return 'bg-amber-100 text-amber-700';
+  if (status === 'published') return 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700';
+  if (status === 'archived') return 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200';
+  return 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-200';
 }
 
 function LessonsManagerPage() {
@@ -170,16 +170,16 @@ function LessonsManagerPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Lessons</h1>
 
-      {error && <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="rounded border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-300">{error}</p>}
 
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
         <label className="block">
           <span className="mb-1 block text-sm font-medium">Title</span>
           <input
             type="text"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
-            className="w-full rounded border border-slate-300 px-3 py-2"
+            className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
             required
           />
         </label>
@@ -190,7 +190,7 @@ function LessonsManagerPage() {
             rows={10}
             value={form.content}
             onChange={(e) => setForm({ ...form, content: e.target.value })}
-            className="w-full rounded border border-slate-300 px-3 py-2 font-mono"
+            className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2 font-mono"
             required
           />
         </label>
@@ -201,7 +201,7 @@ function LessonsManagerPage() {
             <select
               value={form.category_id}
               onChange={(e) => setForm({ ...form, category_id: e.target.value })}
-              className="w-full rounded border border-slate-300 px-3 py-2"
+              className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
             >
               <option value="">No category</option>
               {categories.map((category) => (
@@ -217,7 +217,7 @@ function LessonsManagerPage() {
             <select
               value={form.status}
               onChange={(e) => setForm({ ...form, status: e.target.value })}
-              className="w-full rounded border border-slate-300 px-3 py-2"
+              className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
             >
               <option value="draft">Draft</option>
               <option value="published">Published</option>
@@ -232,7 +232,7 @@ function LessonsManagerPage() {
             type="url"
             value={form.featured_image}
             onChange={(e) => setForm({ ...form, featured_image: e.target.value })}
-            className="w-full rounded border border-slate-300 px-3 py-2"
+            className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
           />
         </label>
 
@@ -242,7 +242,7 @@ function LessonsManagerPage() {
             rows={6}
             value={form.code_snippets}
             onChange={(e) => setForm({ ...form, code_snippets: e.target.value })}
-            className="w-full rounded border border-slate-300 px-3 py-2 font-mono"
+            className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2 font-mono"
             placeholder="console.log('Hello World');"
           />
         </label>
@@ -258,7 +258,7 @@ function LessonsManagerPage() {
                 setEditingId(null);
                 setForm(initialForm);
               }}
-              className="rounded bg-slate-200 px-4 py-2 font-medium text-slate-700"
+              className="rounded bg-slate-200 dark:bg-slate-700 px-4 py-2 font-medium text-slate-700 dark:text-slate-200"
             >
               Cancel
             </button>
@@ -276,21 +276,21 @@ function LessonsManagerPage() {
         </div>
       </form>
 
-      <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <section className="space-y-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold">Live Preview</h2>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             {isEditing ? 'Previewing current lesson edits.' : 'Previewing lesson draft before publishing.'}
           </p>
         </div>
 
-        <article className="space-y-4 rounded-lg border border-slate-100 bg-slate-50 p-4">
-          <h3 className="text-2xl font-bold text-slate-900">{form.title || 'Untitled Lesson'}</h3>
+        <article className="space-y-4 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-4">
+          <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{form.title || 'Untitled Lesson'}</h3>
           <MarkdownRenderer content={form.content || 'Start writing to see a preview...'} />
 
           {mapTextareaToCodeSnippets(form.code_snippets).length > 0 && (
             <div className="space-y-3">
-              <h4 className="text-lg font-semibold text-slate-800">Code Snippets Preview</h4>
+              <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Code Snippets Preview</h4>
               {mapTextareaToCodeSnippets(form.code_snippets).map((snippet, index) => (
                 <MarkdownRenderer key={`preview-snippet-${index + 1}`} content={`\`\`\`javascript\n${snippet}\n\`\`\``} />
               ))}
@@ -299,19 +299,19 @@ function LessonsManagerPage() {
         </article>
       </section>
 
-      <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="space-y-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full rounded border border-slate-300 px-3 py-2 sm:max-w-xs"
+            className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2 sm:max-w-xs"
             placeholder="Search lessons..."
           />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded border border-slate-300 px-3 py-2"
+            className="rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
           >
             <option value="all">All statuses</option>
             <option value="draft">Draft</option>
@@ -322,7 +322,7 @@ function LessonsManagerPage() {
 
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50">
+            <thead className="bg-slate-50 dark:bg-slate-950">
               <tr>
                 <th className="px-4 py-2 text-left">Title</th>
                 <th className="px-4 py-2 text-left">Status</th>
@@ -331,10 +331,10 @@ function LessonsManagerPage() {
                 <th className="px-4 py-2 text-left">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {loading ? (
                 <tr>
-                  <td className="px-4 py-4 text-slate-500" colSpan={5}>
+                  <td className="px-4 py-4 text-slate-500 dark:text-slate-400" colSpan={5}>
                     Loading lessons...
                   </td>
                 </tr>
@@ -347,13 +347,13 @@ function LessonsManagerPage() {
                         {lesson.status}
                       </span>
                     </td>
-                    <td className="px-4 py-2 font-semibold text-indigo-700">{lesson.views_count ?? 0}</td>
+                    <td className="px-4 py-2 font-semibold text-indigo-700 dark:text-indigo-200">{lesson.views_count ?? 0}</td>
                     <td className="px-4 py-2">{lesson.categories?.name ?? 'N/A'}</td>
                     <td className="px-4 py-2">
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
-                          className="rounded bg-amber-100 px-3 py-1 text-amber-800"
+                          className="rounded bg-amber-100 dark:bg-amber-500/15 px-3 py-1 text-amber-800 dark:text-amber-200"
                           onClick={() => handleEdit(lesson)}
                         >
                           Edit
@@ -362,14 +362,14 @@ function LessonsManagerPage() {
                           to={`/lesson/${lesson.id}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="rounded bg-slate-100 px-3 py-1 text-slate-700"
+                          className="rounded bg-slate-100 dark:bg-slate-800 px-3 py-1 text-slate-700 dark:text-slate-200"
                         >
                           {lesson.status === 'published' ? 'View' : 'Preview'}
                         </Link>
                         {lesson.status !== 'published' && (
                           <button
                             type="button"
-                            className="rounded bg-emerald-100 px-3 py-1 text-emerald-800"
+                            className="rounded bg-emerald-100 dark:bg-emerald-500/15 px-3 py-1 text-emerald-800"
                             onClick={() => handleStatusChange(lesson, 'published')}
                           >
                             Publish
@@ -378,7 +378,7 @@ function LessonsManagerPage() {
                         {lesson.status !== 'archived' && (
                           <button
                             type="button"
-                            className="rounded bg-slate-200 px-3 py-1 text-slate-700"
+                            className="rounded bg-slate-200 dark:bg-slate-700 px-3 py-1 text-slate-700 dark:text-slate-200"
                             onClick={() => handleStatusChange(lesson, 'archived')}
                           >
                             Archive
@@ -387,7 +387,7 @@ function LessonsManagerPage() {
                         {lesson.status !== 'draft' && (
                           <button
                             type="button"
-                            className="rounded bg-indigo-100 px-3 py-1 text-indigo-700"
+                            className="rounded bg-indigo-100 dark:bg-indigo-500/20 px-3 py-1 text-indigo-700 dark:text-indigo-200"
                             onClick={() => handleStatusChange(lesson, 'draft')}
                           >
                             Move to Draft
@@ -395,7 +395,7 @@ function LessonsManagerPage() {
                         )}
                         <button
                           type="button"
-                          className="rounded bg-red-100 px-3 py-1 text-red-700"
+                          className="rounded bg-red-100 dark:bg-red-500/15 px-3 py-1 text-red-700 dark:text-red-300"
                           onClick={() => handleDelete(lesson.id)}
                         >
                           Delete
@@ -410,24 +410,24 @@ function LessonsManagerPage() {
         </div>
 
         <div className="flex items-center justify-between">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Showing {pagedLessons.length} of {filteredLessons.length} lessons
           </p>
           <div className="space-x-2">
             <button
               type="button"
-              className="rounded border border-slate-300 px-3 py-1 disabled:opacity-50"
+              className="rounded border border-slate-300 dark:border-slate-700 px-3 py-1 disabled:opacity-50"
               disabled={page <= 1}
               onClick={() => setPage((prev) => prev - 1)}
             >
               Prev
             </button>
-            <span className="text-sm text-slate-600">
+            <span className="text-sm text-slate-600 dark:text-slate-300">
               Page {page} / {totalPages}
             </span>
             <button
               type="button"
-              className="rounded border border-slate-300 px-3 py-1 disabled:opacity-50"
+              className="rounded border border-slate-300 dark:border-slate-700 px-3 py-1 disabled:opacity-50"
               disabled={page >= totalPages}
               onClick={() => setPage((prev) => prev + 1)}
             >

@@ -22,9 +22,9 @@ class ErrorBoundary extends Component {
     }
 
     return (
-      <section className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-800">
+      <section className="rounded-2xl border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/15 p-6 text-red-800">
         <h1 className="text-2xl font-bold">Something went wrong</h1>
-        <p className="mt-2 text-sm text-red-700">
+        <p className="mt-2 text-sm text-red-700 dark:text-red-300">
           We hit an unexpected issue while rendering this page. Please refresh and try again.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">

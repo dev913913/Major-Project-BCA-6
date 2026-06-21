@@ -98,9 +98,9 @@ function LessonsPage() {
 
   return (
     <section className="space-y-8">
-      <header className="rounded-3xl bg-white p-6 shadow-sm">
-        <h1 className="text-4xl font-black text-slate-900">Explore Lessons</h1>
-        <p className="mt-2 text-slate-600">Curated programming lessons by Dev Kumar</p>
+      <header className="rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-sm">
+        <h1 className="text-4xl font-black text-slate-900 dark:text-slate-100">Explore Lessons</h1>
+        <p className="mt-2 text-slate-600 dark:text-slate-300">Curated programming lessons by Dev Kumar</p>
 
         <div className="mt-6 grid gap-4">
           <div className="relative">
@@ -111,7 +111,7 @@ function LessonsPage() {
               onChange={(event) => setQuery(event.target.value)}
               aria-label="Search lessons by title"
               placeholder="Search lessons..."
-              className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-4 outline-none ring-indigo-200 transition focus:ring"
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-800 py-3 pl-10 pr-4 outline-none ring-indigo-200 transition focus:ring"
             />
           </div>
 
@@ -122,7 +122,7 @@ function LessonsPage() {
                 type="button"
                 onClick={() => setActiveCategory(category)}
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-                  activeCategory === category ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  activeCategory === category ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200'
                 }`}
               >
                 {category === 'all' ? 'All categories' : category}
@@ -131,19 +131,19 @@ function LessonsPage() {
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
               Showing <strong>{filteredLessons.length}</strong> of <strong>{lessons.length}</strong> lessons
             </p>
 
             <div className="flex flex-wrap items-center gap-2">
-              <label htmlFor="sortBy" className="text-sm font-medium text-slate-700">
+              <label htmlFor="sortBy" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Sort by
               </label>
               <select
                 id="sortBy"
                 value={sortBy}
                 onChange={(event) => setSortBy(event.target.value)}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none ring-indigo-200 transition focus:ring"
+                className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 outline-none ring-indigo-200 transition focus:ring"
               >
                 {SORT_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -154,7 +154,7 @@ function LessonsPage() {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                className="rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:bg-slate-100"
               >
                 Clear
               </button>
@@ -163,19 +163,19 @@ function LessonsPage() {
         </div>
       </header>
 
-      {error && <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">{error}</p>}
+      {error && <p className="rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/15 p-4 text-red-700 dark:text-red-300">{error}</p>}
 
       {loading ? (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
-            <div key={index} className="h-80 animate-pulse rounded-2xl bg-slate-100" />
+            <div key={index} className="h-80 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800" />
           ))}
         </div>
       ) : filteredLessons.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
+        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-10 text-center">
           <p className="text-4xl" aria-hidden="true">📚</p>
           <h2 className="mt-3 text-2xl font-bold">No lessons found</h2>
-          <p className="mt-2 text-slate-500">Try different search or filter</p>
+          <p className="mt-2 text-slate-500 dark:text-slate-400">Try different search or filter</p>
         </div>
       ) : (
         <div className="grid animate-in gap-5 md:grid-cols-2 xl:grid-cols-3">

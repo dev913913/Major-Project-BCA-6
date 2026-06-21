@@ -125,10 +125,10 @@ function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Dashboard Overview</h1>
-          <p className="text-sm text-slate-500">Last updated {lastUpdated ? formatRelativeTime(lastUpdated.toISOString()) : 'never'}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Last updated {lastUpdated ? formatRelativeTime(lastUpdated.toISOString()) : 'never'}</p>
         </div>
         <button
           type="button"
@@ -139,15 +139,15 @@ function DashboardPage() {
         </button>
       </div>
 
-      {error && <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="rounded border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-300">{error}</p>}
 
       <div className="grid gap-4 md:grid-cols-2">
         <StatCard
           title="Total Lessons"
           value={lessons.length}
           icon={<BookIcon />}
-          color="text-blue-600"
-          bg="bg-blue-50"
+          color="text-blue-600 dark:text-blue-300"
+          bg="bg-blue-50 dark:bg-blue-500/15"
           loading={loading}
           subtitle={`${statusBreakdown.published} published, ${statusBreakdown.draft} draft, ${statusBreakdown.archived} archived`}
         />
@@ -155,8 +155,8 @@ function DashboardPage() {
           title="Total Views"
           value={totalViews.toLocaleString()}
           icon={<EyeIcon />}
-          color="text-emerald-600"
-          bg="bg-emerald-50"
+          color="text-emerald-600 dark:text-emerald-300"
+          bg="bg-emerald-50 dark:bg-emerald-500/15"
           loading={loading}
           subtitle="Combined views across all lessons"
         />
@@ -164,8 +164,8 @@ function DashboardPage() {
           title="Total Categories"
           value={categories.length}
           icon={<CategoryIcon />}
-          color="text-violet-600"
-          bg="bg-violet-50"
+          color="text-violet-600 dark:text-violet-300"
+          bg="bg-violet-50 dark:bg-violet-500/15"
           loading={loading}
           subtitle="Categories currently in use"
         />
@@ -173,17 +173,17 @@ function DashboardPage() {
           title="Most Popular Lesson"
           value={mostPopular ? (mostPopular.views_count ?? 0).toLocaleString() : 0}
           icon={<TrophyIcon />}
-          color="text-amber-600"
-          bg="bg-amber-50"
+          color="text-amber-600 dark:text-amber-300"
+          bg="bg-amber-50 dark:bg-amber-500/15"
           loading={loading}
           subtitle={mostPopular ? mostPopular.title : 'No lesson data yet'}
         />
       </div>
 
       {isEmpty ? (
-        <section className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
+        <section className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 text-center shadow-sm">
           <h2 className="text-lg font-semibold">No lesson data yet</h2>
-          <p className="mt-2 text-sm text-slate-500">Create and publish lessons to unlock analytics visualizations.</p>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Create and publish lessons to unlock analytics visualizations.</p>
         </section>
       ) : (
         <>
@@ -205,31 +205,31 @@ function DashboardPage() {
             </ChartCard>
           </div>
 
-          <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
             <h2 className="text-lg font-semibold">Recent Activity</h2>
-            <p className="mb-3 text-sm text-slate-500">Last 5 published lessons</p>
+            <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">Last 5 published lessons</p>
 
             <div className="space-y-2">
               {loading ? (
                 <>
-                  <div className="h-14 animate-pulse rounded bg-slate-100" />
-                  <div className="h-14 animate-pulse rounded bg-slate-100" />
+                  <div className="h-14 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+                  <div className="h-14 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
                 </>
               ) : recentPublished.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-500">No published lessons yet.</p>
+                <p className="rounded-lg border border-dashed border-slate-300 dark:border-slate-700 p-4 text-sm text-slate-500 dark:text-slate-400">No published lessons yet.</p>
               ) : (
                 recentPublished.map((lesson) => (
                   <Link
                     key={lesson.id}
                     to="/admin/lessons"
-                    className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 transition hover:border-indigo-300 hover:bg-indigo-50"
+                    className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-2 transition hover:border-indigo-300 hover:bg-indigo-50"
                     title="Open lesson manager to edit"
                   >
                     <div>
-                      <p className="font-medium text-slate-800">{lesson.title}</p>
-                      <p className="text-xs text-slate-500">{formatRelativeTime(lesson.updated_at ?? lesson.created_at)}</p>
+                      <p className="font-medium text-slate-800 dark:text-slate-100">{lesson.title}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{formatRelativeTime(lesson.updated_at ?? lesson.created_at)}</p>
                     </div>
-                    <span className="text-sm font-semibold text-indigo-700">{lesson.views_count ?? 0} views</span>
+                    <span className="text-sm font-semibold text-indigo-700 dark:text-indigo-200">{lesson.views_count ?? 0} views</span>
                   </Link>
                 ))
               )}
@@ -243,40 +243,40 @@ function DashboardPage() {
 
 function StatCard({ title, value, subtitle, icon, color, bg, loading }) {
   return (
-    <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
+    <article className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm transition hover:shadow-md">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm text-slate-500">{title}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{title}</p>
           {loading ? (
-            <div className="mt-3 h-10 w-20 animate-pulse rounded bg-slate-100" />
+            <div className="mt-3 h-10 w-20 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
           ) : (
             <p className={`mt-2 text-4xl font-bold ${color}`}>{value}</p>
           )}
         </div>
         <div className={`rounded-lg p-2 ${bg} ${color}`}>{icon}</div>
       </div>
-      <p className="mt-3 text-xs text-slate-500">{subtitle}</p>
+      <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>
     </article>
   );
 }
 
 function ChartCard({ title, subtitle, children }) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
       <h2 className="text-lg font-semibold">{title}</h2>
-      <p className="mb-3 text-sm text-slate-500">{subtitle}</p>
+      <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
       {children}
     </section>
   );
 }
 
 function SimpleLineChart({ data, max, loading }) {
-  if (loading) return <div className="h-64 animate-pulse rounded bg-slate-100" />;
+  if (loading) return <div className="h-64 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />;
   const points = data.map((point, index) => `${(index / (data.length - 1 || 1)) * 100},${100 - (point.views / max) * 100}`).join(' ');
 
   return (
     <div className="space-y-2">
-      <svg viewBox="0 0 100 100" className="h-64 w-full rounded-lg bg-slate-50 p-3">
+      <svg viewBox="0 0 100 100" className="h-64 w-full rounded-lg bg-slate-50 dark:bg-slate-950 p-3">
         <defs>
           <linearGradient id="lineFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#6366f1" stopOpacity="0.35" />
@@ -285,7 +285,7 @@ function SimpleLineChart({ data, max, loading }) {
         </defs>
         <polyline fill="none" stroke="#6366f1" strokeWidth="2" points={points} strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      <div className="grid grid-cols-3 gap-2 text-xs text-slate-500 sm:grid-cols-6">
+      <div className="grid grid-cols-3 gap-2 text-xs text-slate-500 dark:text-slate-400 sm:grid-cols-6">
         {data.filter((_, index) => index % 5 === 0).map((point) => (
           <span key={point.date}>{point.label}</span>
         ))}
@@ -295,18 +295,18 @@ function SimpleLineChart({ data, max, loading }) {
 }
 
 function HorizontalBars({ data, loading }) {
-  if (loading) return <div className="h-64 animate-pulse rounded bg-slate-100" />;
-  if (data.length === 0) return <p className="text-sm text-slate-500">No lesson view data yet.</p>;
+  if (loading) return <div className="h-64 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />;
+  if (data.length === 0) return <p className="text-sm text-slate-500 dark:text-slate-400">No lesson view data yet.</p>;
 
   return (
     <div className="space-y-2">
       {data.map((lesson) => (
         <div key={lesson.id} className="space-y-1" title={`${lesson.views_count ?? 0} views`}>
-          <div className="flex justify-between text-xs text-slate-600">
+          <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300">
             <span>{truncate(lesson.title, 45)}</span>
             <span className="font-semibold">{lesson.views_count ?? 0}</span>
           </div>
-          <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+          <div className="h-3 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
             <div
               className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-blue-600 transition-all duration-700"
               style={{ width: `${Math.max(lesson.width, 5)}%` }}
@@ -319,18 +319,18 @@ function HorizontalBars({ data, loading }) {
 }
 
 function PieLikeChart({ data, loading }) {
-  if (loading) return <div className="h-64 animate-pulse rounded bg-slate-100" />;
-  if (data.length === 0) return <p className="text-sm text-slate-500">No category data yet.</p>;
+  if (loading) return <div className="h-64 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />;
+  if (data.length === 0) return <p className="text-sm text-slate-500 dark:text-slate-400">No category data yet.</p>;
 
   return (
     <div className="space-y-3">
       {data.map((item) => (
         <div key={item.name} className="flex items-center gap-3">
           <span className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
-          <div className="h-3 flex-1 overflow-hidden rounded-full bg-slate-100">
+          <div className="h-3 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
             <div className="h-full rounded-full transition-all duration-700" style={{ width: `${item.percent}%`, backgroundColor: item.color }} />
           </div>
-          <span className="w-24 text-right text-xs text-slate-600">
+          <span className="w-24 text-right text-xs text-slate-600 dark:text-slate-300">
             {item.name} ({item.count}, {item.percent}%)
           </span>
         </div>
@@ -340,7 +340,7 @@ function PieLikeChart({ data, loading }) {
 }
 
 function StatusBars({ breakdown, total, loading }) {
-  if (loading) return <div className="h-64 animate-pulse rounded bg-slate-100" />;
+  if (loading) return <div className="h-64 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />;
 
   return (
     <div className="space-y-3">
@@ -350,12 +350,12 @@ function StatusBars({ breakdown, total, loading }) {
         return (
           <div key={status}>
             <div className="mb-1 flex items-center justify-between text-sm">
-              <span className="capitalize text-slate-700">{status}</span>
-              <span className="font-semibold text-slate-700">
+              <span className="capitalize text-slate-700 dark:text-slate-200">{status}</span>
+              <span className="font-semibold text-slate-700 dark:text-slate-200">
                 {count} ({percentage}%)
               </span>
             </div>
-            <div className="h-4 overflow-hidden rounded-full bg-slate-100">
+            <div className="h-4 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
               <div className={`h-full ${STATUS_COLORS[status]} transition-all duration-700`} style={{ width: `${Math.max(percentage, count > 0 ? 6 : 0)}%` }} />
             </div>
           </div>
