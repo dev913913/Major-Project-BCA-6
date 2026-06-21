@@ -341,12 +341,19 @@ function LessonsManagerPage() {
     }
   }
 
-
+  return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Lessons</h1>
 
-      {error && (
-        <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+
+return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-semibold">Lessons</h1>
+-      {error && (
+          <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+-      )}
+        </div>
+      );
       )}
 
       {/* Mobile tab bar */}
