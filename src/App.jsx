@@ -24,14 +24,14 @@ function RouteFallback() {
     <div
       role="status"
       aria-live="polite"
-      className="h-40 animate-pulse rounded-2xl bg-slate-100"
+      className="h-40 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800"
     />
   );
 }
 
 function App() {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-indigo-700 focus:shadow"

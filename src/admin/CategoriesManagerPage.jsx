@@ -56,21 +56,21 @@ function CategoriesManagerPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Categories</h1>
-      {error && <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="rounded border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-300">{error}</p>}
 
-      <form onSubmit={handleSubmit} className="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-3">
+      <form onSubmit={handleSubmit} className="grid gap-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm sm:grid-cols-3">
         <input
           type="text"
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
           placeholder="Category Name"
-          className="rounded border border-slate-300 px-3 py-2"
+          className="rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
           required
         />
         <select
           value={form.difficulty}
           onChange={(e) => setForm({ ...form, difficulty: e.target.value })}
-          className="rounded border border-slate-300 px-3 py-2"
+          className="rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
         >
           <option value="beginner">Beginner</option>
           <option value="intermediate">Intermediate</option>
@@ -81,9 +81,9 @@ function CategoriesManagerPage() {
         </button>
       </form>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
         <table className="min-w-full divide-y divide-slate-200 text-sm">
-          <thead className="bg-slate-50">
+          <thead className="bg-slate-50 dark:bg-slate-950">
             <tr>
               <th className="px-4 py-2 text-left">Category</th>
               <th className="px-4 py-2 text-left">Difficulty</th>
@@ -91,10 +91,10 @@ function CategoriesManagerPage() {
               <th className="px-4 py-2 text-left">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {loading ? (
               <tr>
-                <td colSpan={4} className="px-4 py-3 text-slate-500">
+                <td colSpan={4} className="px-4 py-3 text-slate-500 dark:text-slate-400">
                   Loading categories...
                 </td>
               </tr>
@@ -104,14 +104,14 @@ function CategoriesManagerPage() {
                   <td className="px-4 py-2 font-medium">{category.name}</td>
                   <td className="px-4 py-2 capitalize">{category.difficulty}</td>
                   <td className="px-4 py-2">
-                    <span className="rounded-full bg-indigo-100 px-2 py-1 text-xs font-semibold text-indigo-700">
+                    <span className="rounded-full bg-indigo-100 dark:bg-indigo-500/20 px-2 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-200">
                       {category.lesson_count}
                     </span>
                   </td>
                   <td className="space-x-2 px-4 py-2">
                     <button
                       type="button"
-                      className="rounded bg-amber-100 px-3 py-1 text-amber-800"
+                      className="rounded bg-amber-100 dark:bg-amber-500/15 px-3 py-1 text-amber-800 dark:text-amber-200"
                       onClick={() => {
                         setEditingId(category.id);
                         setForm({ name: category.name, difficulty: category.difficulty });
@@ -121,7 +121,7 @@ function CategoriesManagerPage() {
                     </button>
                     <button
                       type="button"
-                      className="rounded bg-red-100 px-3 py-1 text-red-700"
+                      className="rounded bg-red-100 dark:bg-red-500/15 px-3 py-1 text-red-700 dark:text-red-300"
                       onClick={async () => {
                         try {
                           await deleteCategory(category.id);

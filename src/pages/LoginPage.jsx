@@ -35,7 +35,7 @@ function LoginPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="mx-auto max-w-md rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
       <h1 className="mb-4 text-2xl font-semibold">Admin Login</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <label className="block">
@@ -44,7 +44,7 @@ function LoginPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded border border-slate-300 px-3 py-2"
+            className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
             required
           />
         </label>
@@ -54,7 +54,7 @@ function LoginPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded border border-slate-300 px-3 py-2"
+            className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
             required
           />
         </label>

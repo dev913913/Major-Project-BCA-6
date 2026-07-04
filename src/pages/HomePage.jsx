@@ -59,7 +59,7 @@ function HomePage() {
           <p className="inline-flex rounded-full bg-white/20 px-4 py-1 text-sm font-medium">Created by Dev Kumar</p>
           <h1 className="text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">Learn Programming with Codev</h1>
           <p className="max-w-2xl text-lg text-indigo-50">Master coding through interactive lessons and hands-on practice.</p>
-          <Link to="/lessons" className="inline-block rounded-xl bg-white px-6 py-3 font-semibold text-indigo-700 shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl">
+          <Link to="/lessons" className="inline-block rounded-xl bg-white dark:bg-slate-900 px-6 py-3 font-semibold text-indigo-700 dark:text-indigo-200 shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl">
             Browse Lessons
           </Link>
         </div>
@@ -68,7 +68,7 @@ function HomePage() {
       <section className="space-y-6">
         <div className="text-center">
           <h2 className="text-3xl font-bold">Why learners love Codev</h2>
-          <p className="mt-2 text-slate-600">Professional learning experience designed by Dev Kumar.</p>
+          <p className="mt-2 text-slate-600 dark:text-slate-300">Professional learning experience designed by Dev Kumar.</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[
@@ -77,10 +77,10 @@ function HomePage() {
             ['🧠', 'Expert Content', 'Curated by Dev Kumar to focus on real-world programming skills.'],
             ['🌍', 'Free Access', 'Quality education for everyone with accessible learning resources.'],
           ].map(([icon, title, text]) => (
-            <article key={title} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg">
+            <article key={title} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg">
               <p className="text-3xl" aria-hidden="true">{icon}</p>
               <h3 className="mt-3 text-lg font-bold">{title}</h3>
-              <p className="mt-2 text-sm text-slate-600">{text}</p>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{text}</p>
             </article>
           ))}
         </div>
@@ -89,15 +89,15 @@ function HomePage() {
       <section className="space-y-6">
         <div className="flex items-end justify-between">
           <h2 className="text-3xl font-bold">Popular Lessons</h2>
-          <Link to="/lessons" className="text-sm font-semibold text-indigo-600">View all lessons →</Link>
+          <Link to="/lessons" className="text-sm font-semibold text-indigo-600 dark:text-indigo-300">View all lessons →</Link>
         </div>
 
         {loading ? (
           <CardSkeletonGrid count={3} />
         ) : error ? (
-          <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">{error}</p>
+          <p className="rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/15 p-4 text-red-700 dark:text-red-300">{error}</p>
         ) : popularLessons.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-slate-500">No published lessons yet.</p>
+          <p className="rounded-lg border border-dashed border-slate-300 dark:border-slate-700 p-6 text-center text-slate-500 dark:text-slate-400">No published lessons yet.</p>
         ) : (
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {popularLessons.map((lesson) => (
@@ -115,18 +115,18 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="rounded-3xl bg-gradient-to-r from-indigo-100 via-violet-100 to-cyan-100 p-8 text-center">
-        <h2 className="text-3xl font-bold text-slate-900">Ready to Start Learning?</h2>
-        <p className="mt-2 text-slate-600">Join thousands of learners mastering programming.</p>
+      <section className="rounded-3xl bg-gradient-to-r from-indigo-100 via-violet-100 to-cyan-100 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 p-8 text-center shadow-sm dark:border dark:border-indigo-500/20 dark:shadow-indigo-950/30">
+        <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Ready to Start Learning?</h2>
+        <p className="mt-2 text-slate-600 dark:text-slate-300">Join thousands of learners mastering programming.</p>
         <div className="mt-5 flex flex-wrap items-center justify-center gap-4">
           <Link to="/lessons" className="rounded-xl bg-indigo-600 px-6 py-3 font-semibold text-white transition hover:bg-indigo-700">Explore All Lessons</Link>
-          <Link to="/categories" className="font-semibold text-indigo-700 underline-offset-4 hover:underline">View by Category</Link>
+          <Link to="/categories" className="font-semibold text-indigo-700 dark:text-indigo-200 underline-offset-4 hover:underline">View by Category</Link>
         </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
         <h2 className="text-2xl font-bold">About Codev</h2>
-        <p className="mt-3 text-slate-600">Codev is a modern coding education platform created by <strong>Dev Kumar</strong> to make programming approachable, practical, and inspiring for everyone.</p>
+        <p className="mt-3 text-slate-600 dark:text-slate-300">Codev is a modern coding education platform created by <strong>Dev Kumar</strong> to make programming approachable, practical, and inspiring for everyone.</p>
       </section>
     </div>
   );
@@ -145,7 +145,7 @@ function CardSkeletonGrid({ count }) {
   return (
     <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
       {Array.from({ length: count }).map((_, index) => (
-        <div key={index} className="h-80 animate-pulse rounded-2xl bg-slate-100" />
+        <div key={index} className="h-80 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800" />
       ))}
     </div>
   );

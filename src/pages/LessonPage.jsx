@@ -85,8 +85,8 @@ function LessonPage() {
   const codeSnippets = useMemo(() => normalizeCodeSnippets(lesson?.code_snippets), [lesson?.code_snippets]);
   const readingTime = useMemo(() => wordsToMinutes(lesson?.content), [lesson?.content]);
 
-  if (error) return <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">{error}</p>;
-  if (!lesson) return <div className="h-64 animate-pulse rounded-2xl bg-slate-100" />;
+  if (error) return <p className="rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/15 p-4 text-red-700 dark:text-red-300">{error}</p>;
+  if (!lesson) return <div className="h-64 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800" />;
 
   return (
     <article className="space-y-8">
@@ -106,7 +106,7 @@ function LessonPage() {
 
       <div className="fixed left-0 top-0 z-[60] h-1 bg-indigo-600 transition-all" style={{ width: `${progress}%` }} />
 
-      <Link to="/lessons" className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600">← Back to Lessons</Link>
+      <Link to="/lessons" className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 dark:text-indigo-300">← Back to Lessons</Link>
 
       <header className="relative overflow-hidden rounded-3xl bg-slate-900 text-white">
         {lesson.featured_image && (
@@ -130,11 +130,11 @@ function LessonPage() {
           <MarkdownRenderer content={lesson.content} />
 
           {codeSnippets.length > 0 && (
-            <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <section className="space-y-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
               <h2 className="text-2xl font-bold">Code Snippets</h2>
               {codeSnippets.map((snippet) => (
                 <div key={snippet.id} className="space-y-2">
-                  <p className="text-sm font-semibold text-slate-600">{snippet.title}</p>
+                  <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">{snippet.title}</p>
                   <MarkdownRenderer content={`\`\`\`${snippet.language}\n${snippet.code}\n\`\`\``} />
                 </div>
               ))}
@@ -143,9 +143,9 @@ function LessonPage() {
         </div>
 
         <aside className="hidden lg:block">
-          <div className="sticky top-24 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Article info</h2>
-            <ul className="mt-3 space-y-2 text-sm text-slate-600">
+          <div className="sticky top-24 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Article info</h2>
+            <ul className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
               <li>Author: Dev Kumar</li>
               <li>Category: {lesson.categories?.name ?? 'General'}</li>
               <li>Reading time: {readingTime} minutes</li>
@@ -157,7 +157,7 @@ function LessonPage() {
       <section className="space-y-4">
         <h2 className="text-2xl font-bold">You Might Also Like</h2>
         {relatedLessons.length === 0 ? (
-          <p className="text-sm text-slate-500">No related lessons available yet.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">No related lessons available yet.</p>
         ) : (
           <div className="grid gap-4 md:grid-cols-3">
             {relatedLessons.map((relatedLesson) => (
