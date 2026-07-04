@@ -26,6 +26,7 @@ export function mapCodeSnippetsToTextarea(value) {
  * @returns {string[]} Array of trimmed code snippet strings.
  */
 export function mapTextareaToCodeSnippets(value) {
+  if (typeof value !== 'string') return [];
   if (!value.trim()) return [];
 
   return value
@@ -41,7 +42,7 @@ export function mapTextareaToCodeSnippets(value) {
  * @returns {string} Tailwind CSS background and text color classes for the badge.
  */
 export function badgeClass(status) {
-  if (status === 'published') return 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700';
+  if (status === 'published') return 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-200';
   if (status === 'archived') return 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200';
   return 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-200';
 }
