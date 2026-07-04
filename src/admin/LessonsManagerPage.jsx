@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   createLesson,
@@ -21,6 +21,13 @@ const initialForm = {
 
 const PAGE_SIZE = 8;
 
+/**
+ * Converts an array of code snippet objects or strings into a single textarea
+ * string, with individual snippets separated by `---` delimiter lines.
+ *
+ * @param {Array<string|{code?: string, content?: string}>} value - Array of snippet strings or objects.
+ * @returns {string} A single string with snippets joined by `\n\n---\n\n`, or an empty string.
+ */
 function mapCodeSnippetsToTextarea(value) {
   if (!Array.isArray(value) || value.length === 0) return '';
 
@@ -34,6 +41,13 @@ function mapCodeSnippetsToTextarea(value) {
     .join('\n\n---\n\n');
 }
 
+/**
+ * Splits a textarea string of code snippets (separated by `---` delimiter lines)
+ * into an array of trimmed, non-empty snippet strings.
+ *
+ * @param {string} value - Raw textarea value containing snippets separated by `---`.
+ * @returns {string[]} Array of trimmed code snippet strings.
+ */
 function mapTextareaToCodeSnippets(value) {
   if (!value.trim()) return [];
 
@@ -43,12 +57,106 @@ function mapTextareaToCodeSnippets(value) {
     .filter(Boolean);
 }
 
+/**
+ * Returns the Tailwind CSS class string for a lesson status badge.
+ *
+ * @param {'published'|'archived'|'draft'} status - The lesson's publication status.
+ * @returns {string} Tailwind CSS background and text color classes for the badge.
+ */
 function badgeClass(status) {
-  if (status === 'published') return 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700';
-  if (status === 'archived') return 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200';
-  return 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-200';
+  if (status === 'published') return 'bg-emerald-100 text-emerald-700';
+  if (status === 'archived') return 'bg-slate-200 text-slate-700';
+  return 'bg-amber-100 text-amber-700';
 }
 
+/**
+ * Custom React hook that tracks whether a CSS media query currently matches.
+ * Safe to use in SSR environments — defaults to `false` on the server.
+ * Uses setState and useEffect with window.matchMedia to reactively respond to resize events.
+ *
+ * @param {string} query - A valid CSS media query string (e.g. `'(min-width: 768px)'`).
+ * @returns {boolean} `true` when the media query matches, `false` otherwise.
+ */
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    // Only run on client side - prevents SSR hydration mismatch
+    if (typeof window === 'undefined') return;
+
+    const mediaQueryList = window.matchMedia(query);
+    
+    // Set initial value based on current media query
+    setMatches(mediaQueryList.matches);
+
+    // Handler for changes
+    const handler = (e) => setMatches(e.matches);
+    
+    // Add listener (support both old and new API for broad browser compatibility)
+    if (mediaQueryList.addEventListener) {
+      mediaQueryList.addEventListener('change', handler);
+    } else {
+      mediaQueryList.addListener(handler);
+    }
+
+    // Cleanup to prevent memory leaks
+    return () => {
+      if (mediaQueryList.removeEventListener) {
+        mediaQueryList.removeEventListener('change', handler);
+      } else {
+        mediaQueryList.removeListener(handler);
+      }
+    };
+  }, [query]);
+
+  return matches;
+}
+
+/**
+ * Renders a read-only preview of the lesson being authored, including the title,
+ * Markdown body, and any code snippets. Memoized and receives pre-processed snippets
+ * to prevent unnecessary re-renders and duplicate calculations.
+ *
+ * @param {Object} props
+ * @param {string} props.title - Lesson title.
+ * @param {string} props.content - Lesson body in Markdown.
+ * @param {string[]} props.snippets - Array of pre-processed, trimmed code snippet strings.
+ * @returns {JSX.Element} Article element with rendered preview content.
+ */
+const PreviewContent = useMemo(
+  () => ({ title, content, snippets }) => (
+    <article className="space-y-4 rounded-lg border border-slate-100 bg-slate-50 p-4">
+      <h3 className="text-2xl font-bold text-slate-900">{title || 'Untitled Lesson'}</h3>
+      <MarkdownRenderer content={content || 'Start writing to see a preview...'} />
+
+      {snippets.length > 0 && (
+        <div className="space-y-3">
+          <h4 className="text-lg font-semibold text-slate-800">Code Snippets Preview</h4>
+          {snippets.map((snippet, index) => (
+            <MarkdownRenderer 
+              key={`preview-snippet-${index + 1}`} 
+              content={`\`\`\`javascript\n${snippet}\n\`\`\``} 
+            />
+          ))}
+        </div>
+      )}
+    </article>
+  ),
+  []
+);
+
+/**
+ * Admin page for managing lessons. Provides a responsive, tabbed interface with
+ * three panels: a lesson creation/edit form, a live Markdown preview, and a
+ * searchable/paginated list of existing lessons. On mobile a sticky bottom bar
+ * exposes quick-save and reset actions regardless of the active tab.
+ *
+ * Responsive behavior:
+ * - Mobile (<768px): Tab-based navigation showing one panel at a time
+ * - Tablet/Desktop (≥768px): Two or three-column layout with all panels visible
+ *
+ * @returns {JSX.Element} The full lessons management admin page.
+ */
 function LessonsManagerPage() {
   const [lessons, setLessons] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -60,8 +168,26 @@ function LessonsManagerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // UI visibility controls
+  const [activeTab, setActiveTab] = useState('form'); // 'form' | 'preview' | 'list'
+  const [showForm, setShowForm] = useState(true);
+  const [showPreview, setShowPreview] = useState(true);
+  const [showList, setShowList] = useState(true);
+
+  // Form reference for native HTML5 validation via requestSubmit()
+  const formRef = useRef(null);
+
+  // Responsive hook for md breakpoint (768px) - reactive and SSR-safe
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+
   const isEditing = useMemo(() => Boolean(editingId), [editingId]);
 
+  /**
+   * Fetches all lessons and categories from the API and updates component state.
+   * Sets `loading` during the request and populates `error` on failure.
+   *
+   * @returns {Promise<void>}
+   */
   async function loadData() {
     try {
       setLoading(true);
@@ -100,6 +226,14 @@ function LessonsManagerPage() {
     setPage(1);
   }, [query, statusFilter]);
 
+  /**
+   * Handles lesson form submission. Creates a new lesson or updates the lesson
+   * currently being edited, reloads the list, resets the form, and switches to
+   * the list tab on mobile.
+   *
+   * @param {React.FormEvent<HTMLFormElement>} event - The form submit event.
+   * @returns {Promise<void>}
+   */
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -120,12 +254,28 @@ function LessonsManagerPage() {
       setForm(initialForm);
       setEditingId(null);
       await loadData();
+
+      // After saving, show list on mobile for quick access
+      setActiveTab('list');
     } catch (err) {
       reportError('Admin lesson save', err);
       setError(friendlyErrorMessage('Unable to save lesson right now. Please try again.'));
     }
   }
 
+  /**
+   * Populates the form with the given lesson's data so the admin can edit it.
+   * On mobile, switches the active tab to the form panel.
+   *
+   * @param {Object} lesson - The lesson object to edit.
+   * @param {string|number} lesson.id - Unique lesson identifier.
+   * @param {string} lesson.title - Lesson title.
+   * @param {string} lesson.content - Lesson body in Markdown.
+   * @param {Array} lesson.code_snippets - Existing code snippets array.
+   * @param {string} lesson.featured_image - URL of the featured image.
+   * @param {string|number} lesson.category_id - Associated category identifier.
+   * @param {string} lesson.status - Publication status of the lesson.
+   */
   function handleEdit(lesson) {
     setEditingId(lesson.id);
     setForm({
@@ -136,8 +286,18 @@ function LessonsManagerPage() {
       category_id: lesson.category_id ?? '',
       status: lesson.status ?? 'draft',
     });
+
+    // On mobile, switch to form when editing
+    setActiveTab('form');
   }
 
+  /**
+   * Deletes the lesson with the given ID. If the deleted lesson is currently being
+   * edited, the form is reset. Reloads the lesson list on success.
+   *
+   * @param {string|number} id - The ID of the lesson to delete.
+   * @returns {Promise<void>}
+   */
   async function handleDelete(id) {
     try {
       setError('');
@@ -153,6 +313,16 @@ function LessonsManagerPage() {
     }
   }
 
+  /**
+   * Updates the publication status of a lesson. No-ops if the lesson already has
+   * the requested status. Reloads the lesson list on success.
+   *
+   * @param {Object} lesson - The lesson whose status should change.
+   * @param {string|number} lesson.id - Unique lesson identifier.
+   * @param {string} lesson.status - Current status of the lesson.
+   * @param {'draft'|'published'|'archived'} nextStatus - The desired new status.
+   * @returns {Promise<void>}
+   */
   async function handleStatusChange(lesson, nextStatus) {
     if (lesson.status === nextStatus) return;
 
@@ -166,273 +336,372 @@ function LessonsManagerPage() {
     }
   }
 
+  /**
+   * Triggers form submission via the DOM `requestSubmit()` API so that native
+   * HTML5 validation runs before `handleSubmit` is called. This ensures required
+   * fields are validated before submission, preventing incomplete lesson records.
+   * Used by the mobile sticky action bar's Save/Update button.
+   */
+  function handleMobileSave() {
+    if (formRef.current) {
+      // Use requestSubmit() to trigger proper HTML5 validation
+      // This ensures title and content are not empty before submission
+      formRef.current.requestSubmit();
+    }
+  }
+
+  // Memoize processed snippets to avoid duplicate calculations on every render
+  const processedSnippets = useMemo(
+    () => mapTextareaToCodeSnippets(form.code_snippets),
+    [form.code_snippets]
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-32 md:pb-0">
       <h1 className="text-2xl font-semibold">Lessons</h1>
 
-      {error && <p className="rounded border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-300">{error}</p>}
+      {error && (
+        <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+      )}
 
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium">Title</span>
-          <input
-            type="text"
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-            className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
-            required
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium">Content (Markdown)</span>
-          <textarea
-            rows={10}
-            value={form.content}
-            onChange={(e) => setForm({ ...form, content: e.target.value })}
-            className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2 font-mono"
-            required
-          />
-        </label>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium">Category</span>
-            <select
-              value={form.category_id}
-              onChange={(e) => setForm({ ...form, category_id: e.target.value })}
-              className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
-            >
-              <option value="">No category</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name} ({category.difficulty})
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium">Status</span>
-            <select
-              value={form.status}
-              onChange={(e) => setForm({ ...form, status: e.target.value })}
-              className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
-            >
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-              <option value="archived">Archived</option>
-            </select>
-          </label>
-        </div>
-
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium">Featured Image URL</span>
-          <input
-            type="url"
-            value={form.featured_image}
-            onChange={(e) => setForm({ ...form, featured_image: e.target.value })}
-            className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium">Code Snippets (split snippets with --- line)</span>
-          <textarea
-            rows={6}
-            value={form.code_snippets}
-            onChange={(e) => setForm({ ...form, code_snippets: e.target.value })}
-            className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2 font-mono"
-            placeholder="console.log('Hello World');"
-          />
-        </label>
-
-        <div className="flex flex-wrap gap-2">
-          <button type="submit" className="rounded bg-indigo-600 px-4 py-2 font-medium text-white">
-            {isEditing ? 'Update Lesson' : 'Create Lesson'}
-          </button>
-          {isEditing && (
-            <button
-              type="button"
-              onClick={() => {
-                setEditingId(null);
-                setForm(initialForm);
-              }}
-              className="rounded bg-slate-200 dark:bg-slate-700 px-4 py-2 font-medium text-slate-700 dark:text-slate-200"
-            >
-              Cancel
-            </button>
-          )}
-          {isEditing && (
-            <Link
-              to={`/lesson/${editingId}`}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded bg-slate-900 px-4 py-2 font-medium text-white"
-            >
-              Open Preview Page
-            </Link>
-          )}
-        </div>
-      </form>
-
-      <section className="space-y-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold">Live Preview</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            {isEditing ? 'Previewing current lesson edits.' : 'Previewing lesson draft before publishing.'}
-          </p>
-        </div>
-
-        <article className="space-y-4 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-4">
-          <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{form.title || 'Untitled Lesson'}</h3>
-          <MarkdownRenderer content={form.content || 'Start writing to see a preview...'} />
-
-          {mapTextareaToCodeSnippets(form.code_snippets).length > 0 && (
-            <div className="space-y-3">
-              <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Code Snippets Preview</h4>
-              {mapTextareaToCodeSnippets(form.code_snippets).map((snippet, index) => (
-                <MarkdownRenderer key={`preview-snippet-${index + 1}`} content={`\`\`\`javascript\n${snippet}\n\`\`\``} />
-              ))}
-            </div>
-          )}
-        </article>
-      </section>
-
-      <div className="space-y-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2 sm:max-w-xs"
-            placeholder="Search lessons..."
-          />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
+      {/* Mobile tab bar - only visible on screens < 768px */}
+      <div className="block md:hidden">
+        <nav className="flex gap-2 overflow-auto pb-2">
+          <button
+            onClick={() => setActiveTab('form')}
+            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'form'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-white text-slate-700 border border-slate-200'
+            }`}
           >
-            <option value="all">All statuses</option>
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
-            <option value="archived">Archived</option>
-          </select>
-        </div>
+            Create
+          </button>
+          <button
+            onClick={() => setActiveTab('preview')}
+            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'preview'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-white text-slate-700 border border-slate-200'
+            }`}
+          >
+            Preview
+          </button>
+          <button
+            onClick={() => setActiveTab('list')}
+            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'list'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-white text-slate-700 border border-slate-200'
+            }`}
+          >
+            Lessons
+          </button>
+        </nav>
+      </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 dark:bg-slate-950">
-              <tr>
-                <th className="px-4 py-2 text-left">Title</th>
-                <th className="px-4 py-2 text-left">Status</th>
-                <th className="px-4 py-2 text-left">Views</th>
-                <th className="px-4 py-2 text-left">Category</th>
-                <th className="px-4 py-2 text-left">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {loading ? (
-                <tr>
-                  <td className="px-4 py-4 text-slate-500 dark:text-slate-400" colSpan={5}>
-                    Loading lessons...
-                  </td>
-                </tr>
-              ) : (
-                pagedLessons.map((lesson) => (
-                  <tr key={lesson.id}>
-                    <td className="px-4 py-2 font-medium">{lesson.title}</td>
-                    <td className="px-4 py-2">
-                      <span className={`rounded-full px-2 py-1 text-xs font-semibold ${badgeClass(lesson.status)}`}>
-                        {lesson.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2 font-semibold text-indigo-700 dark:text-indigo-200">{lesson.views_count ?? 0}</td>
-                    <td className="px-4 py-2">{lesson.categories?.name ?? 'N/A'}</td>
-                    <td className="px-4 py-2">
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          className="rounded bg-amber-100 dark:bg-amber-500/15 px-3 py-1 text-amber-800 dark:text-amber-200"
-                          onClick={() => handleEdit(lesson)}
-                        >
-                          Edit
-                        </button>
-                        <Link
-                          to={`/lesson/${lesson.id}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="rounded bg-slate-100 dark:bg-slate-800 px-3 py-1 text-slate-700 dark:text-slate-200"
-                        >
-                          {lesson.status === 'published' ? 'View' : 'Preview'}
-                        </Link>
-                        {lesson.status !== 'published' && (
-                          <button
-                            type="button"
-                            className="rounded bg-emerald-100 dark:bg-emerald-500/15 px-3 py-1 text-emerald-800"
-                            onClick={() => handleStatusChange(lesson, 'published')}
-                          >
-                            Publish
-                          </button>
-                        )}
-                        {lesson.status !== 'archived' && (
-                          <button
-                            type="button"
-                            className="rounded bg-slate-200 dark:bg-slate-700 px-3 py-1 text-slate-700 dark:text-slate-200"
-                            onClick={() => handleStatusChange(lesson, 'archived')}
-                          >
-                            Archive
-                          </button>
-                        )}
-                        {lesson.status !== 'draft' && (
-                          <button
-                            type="button"
-                            className="rounded bg-indigo-100 dark:bg-indigo-500/20 px-3 py-1 text-indigo-700 dark:text-indigo-200"
-                            onClick={() => handleStatusChange(lesson, 'draft')}
-                          >
-                            Move to Draft
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          className="rounded bg-red-100 dark:bg-red-500/15 px-3 py-1 text-red-700 dark:text-red-300"
-                          onClick={() => handleDelete(lesson.id)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+      {/* Desktop / Tablet controls to toggle visibility - only visible on screens >= 768px */}
+      <div className="hidden md:flex md:items-center md:justify-end md:gap-3">
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input type="checkbox" checked={showForm} onChange={() => setShowForm((s) => !s)} /> Form
+        </label>
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input type="checkbox" checked={showPreview} onChange={() => setShowPreview((s) => !s)} /> Preview
+        </label>
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input type="checkbox" checked={showList} onChange={() => setShowList((s) => !s)} /> List
+        </label>
+      </div>
+
+      {/* Responsive layout: mobile shows single active panel; md shows 2 columns; lg shows 3 columns */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {/* Form (left / top) */}
+        {showForm && (activeTab === 'form' || isDesktop) && (
+          <form
+            ref={formRef}
+            onSubmit={handleSubmit}
+            className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+          >
+            <label className="block">
+              <span className="mb-1 block text-sm font-medium">Title</span>
+              <input
+                type="text"
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                className="w-full rounded border border-slate-300 px-3 py-2"
+                required
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-1 block text-sm font-medium">Content (Markdown)</span>
+              <textarea
+                rows={10}
+                value={form.content}
+                onChange={(e) => setForm({ ...form, content: e.target.value })}
+                className="w-full rounded border border-slate-300 px-3 py-2 font-mono"
+                required
+              />
+            </label>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium">Category</span>
+                <select
+                  value={form.category_id}
+                  onChange={(e) => setForm({ ...form, category_id: e.target.value })}
+                  className="w-full rounded border border-slate-300 px-3 py-2"
+                >
+                  <option value="">No category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name} ({category.difficulty})
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium">Status</span>
+                <select
+                  value={form.status}
+                  onChange={(e) => setForm({ ...form, status: e.target.value })}
+                  className="w-full rounded border border-slate-300 px-3 py-2"
+                >
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </label>
+            </div>
+
+            <label className="block">
+              <span className="mb-1 block text-sm font-medium">Featured Image URL</span>
+              <input
+                type="url"
+                value={form.featured_image}
+                onChange={(e) => setForm({ ...form, featured_image: e.target.value })}
+                className="w-full rounded border border-slate-300 px-3 py-2"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-1 block text-sm font-medium">Code Snippets (split snippets with --- line)</span>
+              <textarea
+                rows={6}
+                value={form.code_snippets}
+                onChange={(e) => setForm({ ...form, code_snippets: e.target.value })}
+                className="w-full rounded border border-slate-300 px-3 py-2 font-mono"
+                placeholder="console.log('Hello World');"
+              />
+            </label>
+
+            <div className="flex flex-wrap gap-2">
+              <button type="submit" className="rounded bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700 transition-colors">
+                {isEditing ? 'Update Lesson' : 'Create Lesson'}
+              </button>
+              {isEditing && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingId(null);
+                    setForm(initialForm);
+                  }}
+                  className="rounded bg-slate-200 px-4 py-2 font-medium text-slate-700 hover:bg-slate-300 transition-colors"
+                >
+                  Cancel
+                </button>
               )}
-            </tbody>
-          </table>
-        </div>
+              {isEditing && (
+                <Link
+                  to={`/lesson/${editingId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-800 transition-colors"
+                >
+                  Open Preview Page
+                </Link>
+              )}
+            </div>
+          </form>
+        )}
 
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Showing {pagedLessons.length} of {filteredLessons.length} lessons
-          </p>
-          <div className="space-x-2">
-            <button
-              type="button"
-              className="rounded border border-slate-300 dark:border-slate-700 px-3 py-1 disabled:opacity-50"
-              disabled={page <= 1}
-              onClick={() => setPage((prev) => prev - 1)}
-            >
-              Prev
-            </button>
-            <span className="text-sm text-slate-600 dark:text-slate-300">
-              Page {page} / {totalPages}
-            </span>
-            <button
-              type="button"
-              className="rounded border border-slate-300 dark:border-slate-700 px-3 py-1 disabled:opacity-50"
-              disabled={page >= totalPages}
-              onClick={() => setPage((prev) => prev + 1)}
-            >
-              Next
-            </button>
+        {/* Preview (middle) */}
+        {showPreview && (activeTab === 'preview' || isDesktop) && (
+          <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold">Live Preview</h2>
+              <p className="text-sm text-slate-500">{isEditing ? 'Previewing current lesson edits.' : 'Previewing lesson draft before publishing.'}</p>
+            </div>
+
+            <PreviewContent title={form.title} content={form.content} snippets={processedSnippets} />
+          </section>
+        )}
+
+        {/* List (right) */}
+        {showList && (activeTab === 'list' || isDesktop) && (
+          <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="w-full rounded border border-slate-300 px-3 py-2 sm:max-w-xs"
+                placeholder="Search lessons..."
+              />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="rounded border border-slate-300 px-3 py-2"
+              >
+                <option value="all">All statuses</option>
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200 text-sm">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left">Title</th>
+                    <th className="px-4 py-2 text-left">Status</th>
+                    <th className="px-4 py-2 text-left">Views</th>
+                    <th className="px-4 py-2 text-left">Category</th>
+                    <th className="px-4 py-2 text-left">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {loading ? (
+                    <tr>
+                      <td className="px-4 py-4 text-slate-500" colSpan={5}>
+                        Loading lessons...
+                      </td>
+                    </tr>
+                  ) : (
+                    pagedLessons.map((lesson) => (
+                      <tr key={lesson.id}>
+                        <td className="px-4 py-2 font-medium">{lesson.title}</td>
+                        <td className="px-4 py-2">
+                          <span className={`rounded-full px-2 py-1 text-xs font-semibold ${badgeClass(lesson.status)}`}>
+                            {lesson.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 font-semibold text-indigo-700">{lesson.views_count ?? 0}</td>
+                        <td className="px-4 py-2">{lesson.categories?.name ?? 'N/A'}</td>
+                        <td className="px-4 py-2">
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              className="rounded bg-amber-100 px-3 py-1 text-amber-800 hover:bg-amber-200 transition-colors"
+                              onClick={() => handleEdit(lesson)}
+                            >
+                              Edit
+                            </button>
+                            <Link
+                              to={`/lesson/${lesson.id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="rounded bg-slate-100 px-3 py-1 text-slate-700 hover:bg-slate-200 transition-colors"
+                            >
+                              {lesson.status === 'published' ? 'View' : 'Preview'}
+                            </Link>
+                            {lesson.status !== 'published' && (
+                              <button
+                                type="button"
+                                className="rounded bg-emerald-100 px-3 py-1 text-emerald-800 hover:bg-emerald-200 transition-colors"
+                                onClick={() => handleStatusChange(lesson, 'published')}
+                              >
+                                Publish
+                              </button>
+                            )}
+                            {lesson.status !== 'archived' && (
+                              <button
+                                type="button"
+                                className="rounded bg-slate-200 px-3 py-1 text-slate-700 hover:bg-slate-300 transition-colors"
+                                onClick={() => handleStatusChange(lesson, 'archived')}
+                              >
+                                Archive
+                              </button>
+                            )}
+                            {lesson.status !== 'draft' && (
+                              <button
+                                type="button"
+                                className="rounded bg-indigo-100 px-3 py-1 text-indigo-700 hover:bg-indigo-200 transition-colors"
+                                onClick={() => handleStatusChange(lesson, 'draft')}
+                              >
+                                Move to Draft
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className="rounded bg-red-100 px-3 py-1 text-red-700 hover:bg-red-200 transition-colors"
+                              onClick={() => handleDelete(lesson.id)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-slate-500">Showing {pagedLessons.length} of {filteredLessons.length} lessons</p>
+              <div className="space-x-2">
+                <button
+                  type="button"
+                  className="rounded border border-slate-300 px-3 py-1 disabled:opacity-50 hover:bg-slate-50 transition-colors"
+                  disabled={page <= 1}
+                  onClick={() => setPage((prev) => prev - 1)}
+                >
+                  Prev
+                </button>
+                <span className="text-sm text-slate-600">
+                  Page {page} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  className="rounded border border-slate-300 px-3 py-1 disabled:opacity-50 hover:bg-slate-50 transition-colors"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((prev) => prev + 1)}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile bottom sticky action bar for quick submit when form is active */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden">
+        <div className="mx-auto max-w-7xl px-4 py-2">
+          <div className="flex items-center justify-between gap-2 rounded-t-md bg-white/90 px-3 py-2 shadow backdrop-blur">
+            <div className="text-sm text-slate-700">{isEditing ? 'Editing lesson' : 'Create new lesson'}</div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingId(null);
+                  setForm(initialForm);
+                }}
+                className="rounded bg-slate-200 px-3 py-2 text-sm font-medium hover:bg-slate-300 transition-colors"
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={handleMobileSave}
+                className="rounded bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+              >
+                {isEditing ? 'Update' : 'Save'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
