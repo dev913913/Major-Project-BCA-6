@@ -9,6 +9,7 @@ import {
 import { fetchCategories } from '../services/categoryService';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
+import { badgeClass, mapCodeSnippetsToTextarea, mapTextareaToCodeSnippets } from '../utils/lessonFormUtils';
 
 const initialForm = {
   title: '',
@@ -20,54 +21,6 @@ const initialForm = {
 };
 
 const PAGE_SIZE = 8;
-
-/**
- * Converts an array of code snippet objects or strings into a single textarea
- * string, with individual snippets separated by `---` delimiter lines.
- *
- * @param {Array<string|{code?: string, content?: string}>} value - Array of snippet strings or objects.
- * @returns {string} A single string with snippets joined by `\n\n---\n\n`, or an empty string.
- */
-function mapCodeSnippetsToTextarea(value) {
-  if (!Array.isArray(value) || value.length === 0) return '';
-
-  return value
-    .map((snippet) => {
-      if (typeof snippet === 'string') return snippet;
-      if (snippet && typeof snippet === 'object') return snippet.code ?? snippet.content ?? '';
-      return '';
-    })
-    .filter(Boolean)
-    .join('\n\n---\n\n');
-}
-
-/**
- * Splits a textarea string of code snippets (separated by `---` delimiter lines)
- * into an array of trimmed, non-empty snippet strings.
- *
- * @param {string} value - Raw textarea value containing snippets separated by `---`.
- * @returns {string[]} Array of trimmed code snippet strings.
- */
-function mapTextareaToCodeSnippets(value) {
-  if (!value.trim()) return [];
-
-  return value
-    .split(/\n\s*---\s*\n/g)
-    .map((snippet) => snippet.trim())
-    .filter(Boolean);
-}
-
-/**
- * Returns the Tailwind CSS class string for a lesson status badge.
- *
- * @param {'published'|'archived'|'draft'} status - The lesson's publication status.
- * @returns {string} Tailwind CSS background and text color classes for the badge.
- */
-function badgeClass(status) {
-  if (status === 'published') return 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700';
-  if (status === 'archived') return 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200';
-  return 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-200';
-}
 
 /**
  * Custom React hook that tracks whether a CSS media query currently matches.
@@ -123,24 +76,28 @@ function useMediaQuery(query) {
  * @param {string} props.form.code_snippets - Raw textarea value of code snippets.
  * @returns {JSX.Element} Article element with rendered preview content.
  */
-const PreviewContent = ({ form }) => (
-  <article className="space-y-4 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-4">
-    <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{form.title || 'Untitled Lesson'}</h3>
-    <MarkdownRenderer content={form.content || 'Start writing to see a preview...'} />
+const PreviewContent = ({ form }) => {
+  const codeSnippets = mapTextareaToCodeSnippets(form.code_snippets);
 
-    {mapTextareaToCodeSnippets(form.code_snippets).length > 0 && (
-      <div className="space-y-3">
-        <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Code Snippets Preview</h4>
-        {mapTextareaToCodeSnippets(form.code_snippets).map((snippet, index) => (
-          <MarkdownRenderer
-            key={`preview-snippet-${index + 1}`}
-            content={`\`\`\`javascript\n${snippet}\n\`\`\``}
-          />
-        ))}
-      </div>
-    )}
-  </article>
-);
+  return (
+    <article className="space-y-4 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-4">
+      <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{form.title || 'Untitled Lesson'}</h3>
+      <MarkdownRenderer content={form.content || 'Start writing to see a preview...'} />
+
+      {codeSnippets.length > 0 && (
+        <div className="space-y-3">
+          <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Code Snippets Preview</h4>
+          {codeSnippets.map((snippet, index) => (
+            <MarkdownRenderer
+              key={`preview-snippet-${index + 1}`}
+              content={`\`\`\`javascript\n${snippet}\n\`\`\``}
+            />
+          ))}
+        </div>
+      )}
+    </article>
+  );
+};
 
 /**
  * Admin page for managing lessons. Provides a responsive, tabbed interface with
@@ -387,14 +344,32 @@ function LessonsManagerPage() {
 
       {/* Desktop / Tablet controls to toggle visibility */}
       <div className="hidden md:flex md:items-center md:justify-end md:gap-3">
-        <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <input type="checkbox" checked={showForm} onChange={() => setShowForm((s) => !s)} /> Form
+        <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showForm}
+            onChange={() => setShowForm((s) => !s)}
+            className="accent-indigo-600 dark:accent-indigo-500"
+          />{' '}
+          Form
         </label>
-        <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <input type="checkbox" checked={showPreview} onChange={() => setShowPreview((s) => !s)} /> Preview
+        <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showPreview}
+            onChange={() => setShowPreview((s) => !s)}
+            className="accent-indigo-600 dark:accent-indigo-500"
+          />{' '}
+          Preview
         </label>
-        <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <input type="checkbox" checked={showList} onChange={() => setShowList((s) => !s)} /> List
+        <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showList}
+            onChange={() => setShowList((s) => !s)}
+            className="accent-indigo-600 dark:accent-indigo-500"
+          />{' '}
+          List
         </label>
       </div>
 
