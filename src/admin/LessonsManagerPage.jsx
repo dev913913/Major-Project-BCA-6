@@ -22,6 +22,23 @@ const initialForm = {
 
 const PAGE_SIZE = 8;
 
+const EDITOR_ACTIONS = [
+  { label: 'H2', before: '## ', placeholder: 'Section title' },
+  { label: 'Bold', before: '**', after: '**', placeholder: 'important text' },
+  { label: 'List', before: '- ', placeholder: 'List item' },
+  { label: 'Quote', before: '> ', placeholder: 'Helpful note' },
+  { label: 'Code', before: '```javascript\n', after: '\n```', placeholder: "console.log('example');" },
+];
+
+function getLessonStats(form) {
+  const words = form.content.trim() ? form.content.trim().split(/\s+/).length : 0;
+  const minutes = Math.max(1, Math.ceil(words / 180));
+  const snippets = mapTextareaToCodeSnippets(form.code_snippets).length;
+  const hasImage = Boolean(form.featured_image.trim());
+
+  return { words, minutes, snippets, hasImage };
+}
+
 /**
  * Custom React hook that tracks whether a CSS media query currently matches.
  * Safe to use in SSR environments — defaults to `false` on the server.
@@ -117,6 +134,7 @@ function LessonsManagerPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [savedAt, setSavedAt] = useState(null);
 
   // UI visibility controls
   const [activeTab, setActiveTab] = useState('form'); // 'form' | 'preview' | 'list'
@@ -126,11 +144,13 @@ function LessonsManagerPage() {
 
   // Form reference for proper validation
   const formRef = useRef(null);
+  const contentRef = useRef(null);
 
   // Responsive hook for md breakpoint (768px)
   const isDesktop = useMediaQuery('(min-width: 768px)');
 
   const isEditing = useMemo(() => Boolean(editingId), [editingId]);
+  const lessonStats = useMemo(() => getLessonStats(form), [form]);
 
   /**
    * Fetches all lessons and categories from the API and updates component state.
@@ -156,6 +176,30 @@ function LessonsManagerPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const savedDraft = window.localStorage.getItem('adminLessonDraft');
+    if (!savedDraft) return;
+
+    try {
+      const parsedDraft = JSON.parse(savedDraft);
+      setForm({ ...initialForm, ...parsedDraft });
+    } catch {
+      window.localStorage.removeItem('adminLessonDraft');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || isEditing) return;
+    const timeoutId = window.setTimeout(() => {
+      window.localStorage.setItem('adminLessonDraft', JSON.stringify(form));
+      setSavedAt(new Date());
+    }, 600);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [form, isEditing]);
 
   const filteredLessons = useMemo(() => {
     return lessons.filter((lesson) => {
@@ -203,6 +247,7 @@ function LessonsManagerPage() {
 
       setForm(initialForm);
       setEditingId(null);
+      if (typeof window !== 'undefined') window.localStorage.removeItem('adminLessonDraft');
       await loadData();
 
       // After saving, show list on mobile for quick access
@@ -286,6 +331,40 @@ function LessonsManagerPage() {
     }
   }
 
+
+  function updateField(field, value) {
+    setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function resetComposer() {
+    setEditingId(null);
+    setForm(initialForm);
+    if (typeof window !== 'undefined') window.localStorage.removeItem('adminLessonDraft');
+  }
+
+  function insertMarkdown(before, after = '', placeholder = '') {
+    const textarea = contentRef.current;
+    const start = textarea?.selectionStart ?? form.content.length;
+    const end = textarea?.selectionEnd ?? form.content.length;
+    const selected = form.content.slice(start, end) || placeholder;
+    const nextContent = `${form.content.slice(0, start)}${before}${selected}${after}${form.content.slice(end)}`;
+    updateField('content', nextContent);
+
+    window.requestAnimationFrame(() => {
+      if (!textarea) return;
+      textarea.focus();
+      const cursorStart = start + before.length;
+      textarea.setSelectionRange(cursorStart, cursorStart + selected.length);
+    });
+  }
+
+  function applyStarterTemplate() {
+    updateField(
+      'content',
+      `## Learning goals\n\n- Understand the main concept\n- Build a small example\n- Practice with a quick challenge\n\n## Explanation\n\nWrite the lesson story here.\n\n## Example\n\n\`\`\`javascript\nconsole.log('Hello lesson');\n\`\`\`\n\n## Practice task\n\nAsk learners to apply what they learned.`,
+    );
+  }
+
   /**
    * Triggers form submission via the DOM `requestSubmit()` API so that native
    * HTML5 validation runs before `handleSubmit` is called. Used by the mobile
@@ -300,7 +379,21 @@ function LessonsManagerPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Lessons</h1>
+      <section className="overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-600 via-violet-600 to-sky-500 p-5 text-white shadow-sm dark:border-indigo-500/30">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-indigo-100">Lesson Studio</p>
+            <h1 className="mt-2 text-3xl font-bold">Create sharper lessons faster</h1>
+            <p className="mt-2 max-w-2xl text-sm text-indigo-50">Draft with Markdown shortcuts, watch quality signals update live, and manage publishing from one smooth workspace.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[520px]">
+            <MiniMetric label="Words" value={lessonStats.words} />
+            <MiniMetric label="Read" value={`${lessonStats.minutes} min`} />
+            <MiniMetric label="Snippets" value={lessonStats.snippets} />
+            <MiniMetric label="Image" value={lessonStats.hasImage ? 'Ready' : 'Missing'} />
+          </div>
+        </div>
+      </section>
 
       {error && (
         <p className="rounded border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-300">{error}</p>
@@ -380,36 +473,65 @@ function LessonsManagerPage() {
           <form
             ref={formRef}
             onSubmit={handleSubmit}
-            className="space-y-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm"
+            className="space-y-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-2"
           >
+            <div className="flex flex-col gap-2 border-b border-slate-100 pb-4 dark:border-slate-800 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold">{isEditing ? 'Edit lesson' : 'New lesson draft'}</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Use the guided composer below, then review the live preview before publishing.</p>
+              </div>
+              {savedAt && !isEditing && <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200">Autosaved {savedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
+            </div>
+
             <label className="block">
-              <span className="mb-1 block text-sm font-medium">Title</span>
+              <span className="mb-1 block text-sm font-medium">Lesson title</span>
               <input
                 type="text"
                 value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
+                onChange={(e) => updateField('title', e.target.value)}
+                className="w-full rounded-xl border border-slate-300 px-3 py-3 text-lg font-semibold dark:border-slate-700"
+                placeholder="e.g. JavaScript arrays made simple"
                 required
               />
             </label>
 
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium">Content (Markdown)</span>
-              <textarea
-                rows={10}
-                value={form.content}
-                onChange={(e) => setForm({ ...form, content: e.target.value })}
-                className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2 font-mono"
-                required
-              />
-            </label>
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800">
+              <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50 p-2 dark:border-slate-800 dark:bg-slate-950">
+                {EDITOR_ACTIONS.map((action) => (
+                  <button
+                    key={action.label}
+                    type="button"
+                    onClick={() => insertMarkdown(action.before, action.after, action.placeholder)}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                  >
+                    {action.label}
+                  </button>
+                ))}
+                <button type="button" onClick={applyStarterTemplate} className="ml-auto rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100 dark:bg-indigo-500/15 dark:text-indigo-200">Starter template</button>
+              </div>
+              <label className="block">
+                <span className="sr-only">Content (Markdown)</span>
+                <textarea
+                  ref={contentRef}
+                  rows={18}
+                  value={form.content}
+                  onChange={(e) => updateField('content', e.target.value)}
+                  className="min-h-[460px] w-full rounded-b-xl border-0 px-4 py-3 font-mono text-sm leading-7 focus:ring-0"
+                  required
+                />
+              </label>
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-3 py-2 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                <span>{lessonStats.words} words · about {lessonStats.minutes} min read</span>
+                <span>Tip: split standalone code snippets with a line containing only ---</span>
+              </div>
+            </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
                 <span className="mb-1 block text-sm font-medium">Category</span>
                 <select
                   value={form.category_id}
-                  onChange={(e) => setForm({ ...form, category_id: e.target.value })}
+                  onChange={(e) => updateField('category_id', e.target.value)}
                   className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
                 >
                   <option value="">No category</option>
@@ -425,7 +547,7 @@ function LessonsManagerPage() {
                 <span className="mb-1 block text-sm font-medium">Status</span>
                 <select
                   value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
+                  onChange={(e) => updateField('status', e.target.value)}
                   className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
                 >
                   <option value="draft">Draft</option>
@@ -440,7 +562,7 @@ function LessonsManagerPage() {
               <input
                 type="url"
                 value={form.featured_image}
-                onChange={(e) => setForm({ ...form, featured_image: e.target.value })}
+                onChange={(e) => updateField('featured_image', e.target.value)}
                 className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
               />
             </label>
@@ -450,7 +572,7 @@ function LessonsManagerPage() {
               <textarea
                 rows={6}
                 value={form.code_snippets}
-                onChange={(e) => setForm({ ...form, code_snippets: e.target.value })}
+                onChange={(e) => updateField('code_snippets', e.target.value)}
                 className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2 font-mono"
                 placeholder="console.log('Hello World');"
               />
@@ -465,7 +587,7 @@ function LessonsManagerPage() {
                   type="button"
                   onClick={() => {
                     setEditingId(null);
-                    setForm(initialForm);
+                    resetComposer();
                   }}
                   className="rounded bg-slate-200 dark:bg-slate-700 px-4 py-2 font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 transition-colors"
                 >
@@ -647,8 +769,7 @@ function LessonsManagerPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setEditingId(null);
-                  setForm(initialForm);
+                  resetComposer();
                 }}
                 className="rounded bg-slate-200 dark:bg-slate-700 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
               >
@@ -665,6 +786,15 @@ function LessonsManagerPage() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function MiniMetric({ label, value }) {
+  return (
+    <div className="rounded-xl bg-white/15 p-3 backdrop-blur">
+      <p className="text-xs font-medium uppercase tracking-wide text-indigo-100">{label}</p>
+      <p className="mt-1 text-xl font-bold">{value}</p>
     </div>
   );
 }
