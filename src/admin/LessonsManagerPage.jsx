@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   createLesson,
   deleteLesson,
@@ -7,7 +7,6 @@ import {
   updateLesson,
 } from '../services/lessonService';
 import { fetchCategories } from '../services/categoryService';
-import MarkdownRenderer from '../components/MarkdownRenderer';
 import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
 import { badgeClass, mapCodeSnippetsToTextarea, mapTextareaToCodeSnippets } from '../utils/lessonFormUtils';
 
@@ -22,49 +21,135 @@ const initialForm = {
 
 const PAGE_SIZE = 8;
 
-const EDITOR_ACTIONS = [
-  { label: 'Heading', before: '## ', placeholder: 'Section title' },
-  { label: 'Bold', before: '**', after: '**', placeholder: 'important text' },
-  { label: 'Bulleted list', before: '- ', placeholder: 'List item' },
-  { label: 'Quote', before: '> ', placeholder: 'Helpful note' },
-  { label: 'Code block', before: '```javascript\n', after: '\n```', placeholder: "console.log('example');" },
-];
-
 const EDITOR_TABS = [
   { id: 'compose', label: 'Compose' },
   { id: 'markdown', label: 'Markdown' },
 ];
 
-const MOBILE_TABS = [
-  { id: 'editor', label: 'Editor' },
-  { id: 'preview', label: 'Preview' },
-  { id: 'lessons', label: 'Lessons' },
+const TOOLBAR_ACTIONS = [
+  { id: 'bold', label: 'Bold', command: 'bold' },
+  { id: 'heading', label: 'Heading', command: 'formatBlock', value: 'h2' },
+  { id: 'list', label: 'Bulleted list', command: 'insertUnorderedList' },
+  { id: 'quote', label: 'Quote', command: 'formatBlock', value: 'blockquote' },
+  { id: 'code', label: 'Code block', command: 'formatBlock', value: 'pre' },
 ];
 
-const PreviewContent = ({ form }) => {
-  const codeSnippets = mapTextareaToCodeSnippets(form.code_snippets);
+function markdownToComposeHtml(markdown) {
+  if (!markdown.trim()) return '';
 
-  return (
-    <article className="space-y-4 rounded-xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-      <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{form.title || 'Untitled Lesson'}</h3>
-      <MarkdownRenderer content={form.content || 'Start writing to see a preview...'} />
+  const lines = markdown.split('\n');
+  const html = [];
+  let listItems = [];
+  let inCodeBlock = false;
+  let codeLines = [];
 
-      {codeSnippets.length > 0 && (
-        <div className="space-y-3">
-          <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Extra Code Snippets</h4>
-          {codeSnippets.map((snippet, index) => (
-            <MarkdownRenderer
-              key={`preview-snippet-${index + 1}`}
-              content={`\`\`\`javascript\n${snippet}\n\`\`\``}
-            />
-          ))}
-        </div>
-      )}
-    </article>
-  );
-};
+  const flushList = () => {
+    if (listItems.length === 0) return;
+    html.push(`<ul>${listItems.map((item) => `<li>${formatInlineMarkdown(item)}</li>`).join('')}</ul>`);
+    listItems = [];
+  };
+
+  const flushCode = () => {
+    if (!inCodeBlock) return;
+    html.push(`<pre>${escapeHtml(codeLines.join('\n'))}</pre>`);
+    codeLines = [];
+    inCodeBlock = false;
+  };
+
+  lines.forEach((line) => {
+    if (line.startsWith('```')) {
+      if (inCodeBlock) {
+        flushCode();
+      } else {
+        flushList();
+        inCodeBlock = true;
+      }
+      return;
+    }
+
+    if (inCodeBlock) {
+      codeLines.push(line);
+      return;
+    }
+
+    if (line.startsWith('- ')) {
+      listItems.push(line.slice(2));
+      return;
+    }
+
+    flushList();
+
+    if (!line.trim()) {
+      html.push('<p><br></p>');
+    } else if (line.startsWith('## ')) {
+      html.push(`<h2>${formatInlineMarkdown(line.slice(3))}</h2>`);
+    } else if (line.startsWith('> ')) {
+      html.push(`<blockquote>${formatInlineMarkdown(line.slice(2))}</blockquote>`);
+    } else {
+      html.push(`<p>${formatInlineMarkdown(line)}</p>`);
+    }
+  });
+
+  flushList();
+  flushCode();
+
+  return html.join('');
+}
+
+function composeHtmlToMarkdown(html) {
+  const container = document.createElement('div');
+  container.innerHTML = html;
+
+  const convertNode = (node) => {
+    if (node.nodeType === Node.TEXT_NODE) return node.textContent;
+    if (node.nodeType !== Node.ELEMENT_NODE) return '';
+
+    const text = Array.from(node.childNodes).map(convertNode).join('');
+    const tag = node.tagName.toLowerCase();
+
+    if (tag === 'strong' || tag === 'b') return `**${text}**`;
+    if (tag === 'br') return '\n';
+    return text;
+  };
+
+  const blocks = Array.from(container.childNodes).map((node) => {
+    if (node.nodeType === Node.TEXT_NODE) return node.textContent;
+    if (node.nodeType !== Node.ELEMENT_NODE) return '';
+
+    const tag = node.tagName.toLowerCase();
+    const text = Array.from(node.childNodes).map(convertNode).join('').trimEnd();
+
+    if (tag === 'h2') return `## ${text}`.trimEnd();
+    if (tag === 'blockquote') return text.split('\n').map((line) => `> ${line}`).join('\n');
+    if (tag === 'pre') return `\`\`\`\n${node.textContent.trimEnd()}\n\`\`\``;
+    if (tag === 'ul') {
+      return Array.from(node.querySelectorAll('li'))
+        .map((item) => `- ${Array.from(item.childNodes).map(convertNode).join('').trimEnd()}`)
+        .join('\n');
+    }
+    if (tag === 'div' || tag === 'p') return text;
+    return text;
+  });
+
+  return blocks.join('\n\n').replace(/\n{3,}/g, '\n\n').trimStart();
+}
+
+function formatInlineMarkdown(text) {
+  return escapeHtml(text).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+}
+
+function escapeHtml(value) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
 function LessonsManagerPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [lessons, setLessons] = useState([]);
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState(initialForm);
@@ -75,12 +160,13 @@ function LessonsManagerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editorMode, setEditorMode] = useState('compose');
-  const [mobileTab, setMobileTab] = useState('editor');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [activeFormats, setActiveFormats] = useState({});
   const formRef = useRef(null);
-  const contentRef = useRef(null);
+  const composeRef = useRef(null);
 
   const isEditing = useMemo(() => Boolean(editingId), [editingId]);
+  const mode = location.pathname.endsWith('/create') ? 'create' : 'lessons';
 
   async function loadData() {
     try {
@@ -120,6 +206,34 @@ function LessonsManagerPage() {
     setPage(1);
   }, [query, statusFilter]);
 
+  useEffect(() => {
+    if (editorMode !== 'compose' || !composeRef.current) return;
+    if (document.activeElement === composeRef.current) return;
+    composeRef.current.innerHTML = markdownToComposeHtml(form.content);
+  }, [editorMode, form.content]);
+
+
+  function readActiveFormats() {
+    const block = document.queryCommandValue('formatBlock')?.toLowerCase();
+    return {
+      bold: document.queryCommandState('bold'),
+      list: document.queryCommandState('insertUnorderedList'),
+      heading: block === 'h2',
+      quote: block === 'blockquote',
+      code: block === 'pre',
+    };
+  }
+
+  useEffect(() => {
+    function handleSelectionChange() {
+      if (!composeRef.current?.contains(document.activeElement)) return;
+      setActiveFormats(readActiveFormats());
+    }
+
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+  }, []);
+
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -139,7 +253,6 @@ function LessonsManagerPage() {
 
       resetComposer();
       await loadData();
-      setMobileTab('lessons');
     } catch (err) {
       reportError('Admin lesson save', err);
       setError(friendlyErrorMessage('Unable to save lesson right now. Please try again.'));
@@ -158,7 +271,7 @@ function LessonsManagerPage() {
     });
     setShowAdvanced(Boolean(lesson.code_snippets?.length));
     setEditorMode('compose');
-    setMobileTab('editor');
+    navigate('/admin/create');
   }
 
   async function handleDelete(id) {
@@ -195,161 +308,127 @@ function LessonsManagerPage() {
     setForm(initialForm);
     setEditorMode('compose');
     setShowAdvanced(false);
+    if (composeRef.current) composeRef.current.innerHTML = '';
   }
 
   function clearBody() {
     updateField('content', '');
-    contentRef.current?.focus();
+    if (composeRef.current) {
+      composeRef.current.innerHTML = '';
+      composeRef.current.focus();
+    }
   }
 
-  function insertMarkdown(before, after = '', placeholder = '') {
-    const textarea = contentRef.current;
-    const start = textarea?.selectionStart ?? form.content.length;
-    const end = textarea?.selectionEnd ?? form.content.length;
-    const selected = form.content.slice(start, end) || placeholder;
-    const nextContent = `${form.content.slice(0, start)}${before}${selected}${after}${form.content.slice(end)}`;
-    updateField('content', nextContent);
-
-    window.requestAnimationFrame(() => {
-      if (!textarea) return;
-      textarea.focus();
-      const cursorStart = start + before.length;
-      textarea.setSelectionRange(cursorStart, cursorStart + selected.length);
-    });
+  function handleComposeInput() {
+    if (!composeRef.current) return;
+    updateField('content', composeHtmlToMarkdown(composeRef.current.innerHTML));
   }
 
-  function handleMobileSave() {
-    formRef.current?.requestSubmit();
+  function runToolbarCommand(action) {
+    if (editorMode !== 'compose') {
+      setEditorMode('compose');
+      window.requestAnimationFrame(() => runToolbarCommand(action));
+      return;
+    }
+
+    composeRef.current?.focus();
+
+    if (action.command === 'formatBlock' && activeFormats[action.id]) {
+      document.execCommand('formatBlock', false, 'p');
+    } else {
+      document.execCommand(action.command, false, action.value ?? null);
+    }
+
+    handleComposeInput();
+    setActiveFormats(readActiveFormats());
   }
 
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Lessons</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Create, edit, preview, and publish lessons from a simple editor workspace.</p>
+          <h1 className="text-2xl font-semibold">{mode === 'create' ? 'Create lesson' : 'Lessons'}</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            {mode === 'create' ? 'Write in Compose mode, switch to Markdown only when you need the source.' : 'Search, edit, preview, and manage published lessons.'}
+          </p>
         </div>
-        <button
-          type="button"
-          onClick={resetComposer}
-          className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-        >
-          New blank lesson
-        </button>
+        {mode === 'create' ? (
+          <button
+            type="button"
+            onClick={resetComposer}
+            className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            New blank lesson
+          </button>
+        ) : (
+          <Link
+            to="/admin/create"
+            className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700"
+          >
+            Create lesson
+          </Link>
+        )}
       </header>
 
       {error && (
         <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/15 dark:text-red-300">{error}</p>
       )}
 
-      <div className="block md:hidden">
-        <nav className="flex gap-2 overflow-auto pb-2">
-          {MOBILE_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setMobileTab(tab.id)}
-              className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                mobileTab === tab.id
-                  ? 'bg-indigo-600 text-white'
-                  : 'border border-slate-200 bg-white text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      <div className="space-y-6">
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
-          <div className={mobileTab === 'editor' ? 'block' : 'hidden md:block'}>
-            <LessonEditor
-              form={form}
-              categories={categories}
-              contentRef={contentRef}
-              editorMode={editorMode}
-              formRef={formRef}
-              isEditing={isEditing}
-              showAdvanced={showAdvanced}
-              onClearBody={clearBody}
-              onEditorModeChange={setEditorMode}
-              onFieldChange={updateField}
-              onInsertMarkdown={insertMarkdown}
-              onShowAdvancedChange={setShowAdvanced}
-              onSubmit={handleSubmit}
-              onReset={resetComposer}
-              editingId={editingId}
-            />
-          </div>
-
-          <section className={`${mobileTab === 'preview' ? 'block' : 'hidden xl:block'} space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900`}>
-            <div>
-              <h2 className="text-lg font-semibold">Preview</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">This is how the lesson will render for readers.</p>
-            </div>
-            <PreviewContent form={form} />
-          </section>
-        </div>
-
-        <div className={mobileTab === 'lessons' ? 'block' : 'hidden md:block'}>
-          <LessonsTable
-            filteredLessons={filteredLessons}
-            loading={loading}
-            page={page}
-            pagedLessons={pagedLessons}
-            query={query}
-            statusFilter={statusFilter}
-            totalPages={totalPages}
-            onDelete={handleDelete}
-            onEdit={handleEdit}
-            onPageChange={setPage}
-            onQueryChange={setQuery}
-            onStatusChange={handleStatusChange}
-            onStatusFilterChange={setStatusFilter}
-          />
-        </div>
-      </div>
-
-      <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden">
-        <div className="mx-auto max-w-7xl px-4 py-2">
-          <div className="flex items-center justify-between gap-2 rounded-t-md bg-white/90 px-3 py-2 shadow backdrop-blur dark:bg-slate-900/90">
-            <div className="text-sm text-slate-700 dark:text-slate-200">{isEditing ? 'Editing lesson' : 'New blank lesson'}</div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={resetComposer}
-                className="rounded bg-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
-              >
-                Reset
-              </button>
-              <button
-                type="button"
-                onClick={handleMobileSave}
-                className="rounded bg-indigo-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
-              >
-                {isEditing ? 'Update' : 'Save'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      {mode === 'create' ? (
+        <LessonEditor
+          activeFormats={activeFormats}
+          composeRef={composeRef}
+          form={form}
+          categories={categories}
+          editorMode={editorMode}
+          formRef={formRef}
+          isEditing={isEditing}
+          showAdvanced={showAdvanced}
+          onClearBody={clearBody}
+          onComposeInput={handleComposeInput}
+          onEditorModeChange={setEditorMode}
+          onFieldChange={updateField}
+          onRunCommand={runToolbarCommand}
+          onShowAdvancedChange={setShowAdvanced}
+          onSubmit={handleSubmit}
+          onReset={resetComposer}
+          editingId={editingId}
+        />
+      ) : (
+        <LessonsTable
+          filteredLessons={filteredLessons}
+          loading={loading}
+          page={page}
+          pagedLessons={pagedLessons}
+          query={query}
+          statusFilter={statusFilter}
+          totalPages={totalPages}
+          onDelete={handleDelete}
+          onEdit={handleEdit}
+          onPageChange={setPage}
+          onQueryChange={setQuery}
+          onStatusChange={handleStatusChange}
+          onStatusFilterChange={setStatusFilter}
+        />
+      )}
     </div>
   );
 }
 
 function LessonEditor({
+  activeFormats,
+  composeRef,
   form,
   categories,
-  contentRef,
   editorMode,
   formRef,
   isEditing,
   showAdvanced,
   onClearBody,
+  onComposeInput,
   onEditorModeChange,
   onFieldChange,
-  onInsertMarkdown,
+  onRunCommand,
   onShowAdvancedChange,
   onSubmit,
   onReset,
@@ -364,7 +443,7 @@ function LessonEditor({
       <div className="flex flex-col gap-2 border-b border-slate-100 pb-4 dark:border-slate-800 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-xl font-semibold">{isEditing ? 'Edit lesson' : 'New lesson'}</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Start blank, write in Compose, or switch to Markdown for source editing.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Compose works like a simple document editor. Markdown shows the saved source.</p>
         </div>
         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
           {editorMode === 'compose' ? 'Compose view' : 'Markdown view'}
@@ -445,12 +524,18 @@ function LessonEditor({
           </div>
 
           <div className="flex flex-wrap gap-1">
-            {EDITOR_ACTIONS.map((action) => (
+            {TOOLBAR_ACTIONS.map((action) => (
               <button
-                key={action.label}
+                key={action.id}
                 type="button"
-                onClick={() => onInsertMarkdown(action.before, action.after, action.placeholder)}
-                className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                aria-pressed={Boolean(activeFormats[action.id])}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => onRunCommand(action)}
+                className={`rounded-md border px-2.5 py-1.5 text-xs font-medium transition ${
+                  activeFormats[action.id]
+                    ? 'border-indigo-500 bg-indigo-600 text-white'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
+                }`}
               >
                 {action.label}
               </button>
@@ -466,27 +551,35 @@ function LessonEditor({
           </button>
         </div>
 
-        <label className="block">
-          <span className="sr-only">Lesson body</span>
-          <textarea
-            ref={contentRef}
-            rows={editorMode === 'compose' ? 18 : 20}
-            value={form.content}
-            onChange={(e) => onFieldChange('content', e.target.value)}
-            className={`min-h-[460px] w-full border-0 px-5 py-4 focus:ring-0 ${
-              editorMode === 'compose'
-                ? 'text-base leading-8 text-slate-900 dark:text-slate-100'
-                : 'font-mono text-sm leading-7 text-slate-900 dark:text-slate-100'
-            }`}
-            placeholder={editorMode === 'compose' ? 'Write your lesson here...' : 'Write or edit Markdown source here...'}
-            required
+        {editorMode === 'compose' ? (
+          <div
+            ref={composeRef}
+            contentEditable
+            role="textbox"
+            aria-label="Lesson body"
+            aria-multiline="true"
+            data-placeholder="Write your lesson here..."
+            onInput={onComposeInput}
+            className="prose min-h-[520px] max-w-none px-5 py-4 text-slate-900 outline-none empty:before:text-slate-400 empty:before:content-[attr(data-placeholder)] dark:prose-invert dark:text-slate-100"
           />
-        </label>
+        ) : (
+          <label className="block">
+            <span className="sr-only">Markdown source</span>
+            <textarea
+              rows={22}
+              value={form.content}
+              onChange={(e) => onFieldChange('content', e.target.value)}
+              className="min-h-[520px] w-full border-0 px-5 py-4 font-mono text-sm leading-7 text-slate-900 focus:ring-0 dark:text-slate-100"
+              placeholder="Write or edit Markdown source here..."
+              required
+            />
+          </label>
+        )}
 
         <div className="border-t border-slate-100 px-4 py-2 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
           {editorMode === 'compose'
-            ? 'Use the toolbar for headings, lists, quotes, and code blocks.'
-            : 'Markdown mode supports headings, lists, links, blockquotes, and fenced code blocks.'}
+            ? 'Select text, then use the toolbar. Clicking an active format turns it off for the selected text or next typing.'
+            : 'Markdown mode is the saved source view for precise editing.'}
         </div>
       </div>
 
@@ -531,7 +624,7 @@ function LessonEditor({
             rel="noreferrer"
             className="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white transition-colors hover:bg-slate-800"
           >
-            Open preview page
+            Open site preview
           </Link>
         )}
       </div>
