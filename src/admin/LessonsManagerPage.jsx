@@ -27,7 +27,11 @@ const EDITOR_TABS = [
 ];
 
 const TOOLBAR_ACTIONS = [
+  { id: 'undo', label: 'Undo', command: 'undo', history: true },
+  { id: 'redo', label: 'Redo', command: 'redo', history: true },
   { id: 'bold', label: 'Bold', command: 'bold' },
+  { id: 'italic', label: 'Italic', command: 'italic' },
+  { id: 'underline', label: 'Underline', command: 'underline' },
   { id: 'heading', label: 'Heading', command: 'formatBlock', value: 'h2' },
   { id: 'list', label: 'Bulleted list', command: 'insertUnorderedList' },
   { id: 'quote', label: 'Quote', command: 'formatBlock', value: 'blockquote' },
@@ -108,6 +112,8 @@ function composeHtmlToMarkdown(html) {
     const tag = node.tagName.toLowerCase();
 
     if (tag === 'strong' || tag === 'b') return `**${text}**`;
+    if (tag === 'em' || tag === 'i') return `*${text}*`;
+    if (tag === 'u') return `<u>${text}</u>`;
     if (tag === 'br') return '\n';
     return text;
   };
@@ -135,7 +141,10 @@ function composeHtmlToMarkdown(html) {
 }
 
 function formatInlineMarkdown(text) {
-  return escapeHtml(text).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  return escapeHtml(text)
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(?!\*)(.*?)\*/g, '<em>$1</em>')
+    .replace(/&lt;u&gt;(.*?)&lt;\/u&gt;/g, '<u>$1</u>');
 }
 
 function escapeHtml(value) {
@@ -217,6 +226,8 @@ function LessonsManagerPage() {
     const block = document.queryCommandValue('formatBlock')?.toLowerCase();
     return {
       bold: document.queryCommandState('bold'),
+      italic: document.queryCommandState('italic'),
+      underline: document.queryCommandState('underline'),
       list: document.queryCommandState('insertUnorderedList'),
       heading: block === 'h2',
       quote: block === 'blockquote',
@@ -343,6 +354,27 @@ function LessonsManagerPage() {
     setActiveFormats(readActiveFormats());
   }
 
+  function handleEditorKeyDown(event) {
+    if (!(event.ctrlKey || event.metaKey)) return;
+
+    const shortcut = event.key.toLowerCase();
+    const actionMap = {
+      b: 'bold',
+      i: 'italic',
+      u: 'underline',
+      z: event.shiftKey ? 'redo' : 'undo',
+      y: 'redo',
+    };
+    const actionId = actionMap[shortcut];
+    if (!actionId) return;
+
+    const action = TOOLBAR_ACTIONS.find((item) => item.id === actionId);
+    if (!action) return;
+
+    event.preventDefault();
+    runToolbarCommand(action);
+  }
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -389,6 +421,7 @@ function LessonsManagerPage() {
           onEditorModeChange={setEditorMode}
           onFieldChange={updateField}
           onRunCommand={runToolbarCommand}
+          onEditorKeyDown={handleEditorKeyDown}
           onShowAdvancedChange={setShowAdvanced}
           onSubmit={handleSubmit}
           onReset={resetComposer}
@@ -415,6 +448,19 @@ function LessonsManagerPage() {
   );
 }
 
+
+function shortcutLabel(actionId) {
+  const labels = {
+    undo: 'Ctrl/Cmd + Z',
+    redo: 'Ctrl/Cmd + Y or Ctrl/Cmd + Shift + Z',
+    bold: 'Ctrl/Cmd + B',
+    italic: 'Ctrl/Cmd + I',
+    underline: 'Ctrl/Cmd + U',
+  };
+
+  return labels[actionId] ?? undefined;
+}
+
 function LessonEditor({
   activeFormats,
   composeRef,
@@ -429,6 +475,7 @@ function LessonEditor({
   onEditorModeChange,
   onFieldChange,
   onRunCommand,
+  onEditorKeyDown,
   onShowAdvancedChange,
   onSubmit,
   onReset,
@@ -528,11 +575,12 @@ function LessonEditor({
               <button
                 key={action.id}
                 type="button"
-                aria-pressed={Boolean(activeFormats[action.id])}
+                aria-pressed={action.history ? undefined : Boolean(activeFormats[action.id])}
+                title={shortcutLabel(action.id)}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => onRunCommand(action)}
                 className={`rounded-md border px-2.5 py-1.5 text-xs font-medium transition ${
-                  activeFormats[action.id]
+                  !action.history && activeFormats[action.id]
                     ? 'border-indigo-500 bg-indigo-600 text-white'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
                 }`}
@@ -560,6 +608,7 @@ function LessonEditor({
             aria-multiline="true"
             data-placeholder="Write your lesson here..."
             onInput={onComposeInput}
+            onKeyDown={onEditorKeyDown}
             className="prose min-h-[520px] max-w-none px-5 py-4 text-slate-900 outline-none empty:before:text-slate-400 empty:before:content-[attr(data-placeholder)] dark:prose-invert dark:text-slate-100"
           />
         ) : (
@@ -569,6 +618,7 @@ function LessonEditor({
               rows={22}
               value={form.content}
               onChange={(e) => onFieldChange('content', e.target.value)}
+              onKeyDown={onEditorKeyDown}
               className="min-h-[520px] w-full border-0 px-5 py-4 font-mono text-sm leading-7 text-slate-900 focus:ring-0 dark:text-slate-100"
               placeholder="Write or edit Markdown source here..."
               required
@@ -617,15 +667,19 @@ function LessonEditor({
         >
           Clear all
         </button>
-        {isEditing && (
+        {isEditing ? (
           <Link
             to={`/lesson/${editingId}`}
             target="_blank"
             rel="noreferrer"
             className="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white transition-colors hover:bg-slate-800"
           >
-            Open site preview
+            Open preview on site
           </Link>
+        ) : (
+          <span className="rounded-lg border border-dashed border-slate-300 px-4 py-2 text-sm font-medium text-slate-500 dark:border-slate-700 dark:text-slate-400">
+            Save lesson to enable site preview
+          </span>
         )}
       </div>
     </form>
