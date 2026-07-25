@@ -248,6 +248,11 @@ function LessonsManagerPage() {
   async function handleSubmit(event) {
     event.preventDefault();
 
+    if (!form.content.trim()) {
+      setError('Lesson content cannot be empty.');
+      return;
+    }
+
     const payload = {
       ...form,
       category_id: form.category_id || null,
@@ -606,6 +611,7 @@ function LessonEditor({
             role="textbox"
             aria-label="Lesson body"
             aria-multiline="true"
+            aria-required="true"
             data-placeholder="Write your lesson here..."
             onInput={onComposeInput}
             onKeyDown={onEditorKeyDown}
