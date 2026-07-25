@@ -59,6 +59,7 @@ function App() {
                 }
               >
                 <Route index element={<DashboardPage />} />
+                <Route path="create" element={<LessonsManagerPage />} />
                 <Route path="lessons" element={<LessonsManagerPage />} />
                 <Route path="categories" element={<CategoriesManagerPage />} />
                 <Route path="media" element={<MediaManagerPage />} />

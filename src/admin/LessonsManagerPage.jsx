@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   createLesson,
   deleteLesson,
@@ -7,13 +7,12 @@ import {
   updateLesson,
 } from '../services/lessonService';
 import { fetchCategories } from '../services/categoryService';
-import MarkdownRenderer from '../components/MarkdownRenderer';
 import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
 import { badgeClass, mapCodeSnippetsToTextarea, mapTextareaToCodeSnippets } from '../utils/lessonFormUtils';
 
 const initialForm = {
   title: '',
-  content: '## New Lesson\n\nWrite your lesson in Markdown.',
+  content: '',
   code_snippets: '',
   featured_image: '',
   category_id: '',
@@ -22,92 +21,144 @@ const initialForm = {
 
 const PAGE_SIZE = 8;
 
-/**
- * Custom React hook that tracks whether a CSS media query currently matches.
- * Safe to use in SSR environments — defaults to `false` on the server.
- *
- * @param {string} query - A valid CSS media query string (e.g. `'(min-width: 768px)'`).
- * @returns {boolean} `true` when the media query matches, `false` otherwise.
- */
-function useMediaQuery(query) {
-  const [matches, setMatches] = useState(false);
+const EDITOR_TABS = [
+  { id: 'compose', label: 'Compose' },
+  { id: 'markdown', label: 'Markdown' },
+];
 
-  useEffect(() => {
-    // Only run on client side
-    if (typeof window === 'undefined') return;
+const TOOLBAR_ACTIONS = [
+  { id: 'undo', label: 'Undo', command: 'undo', history: true },
+  { id: 'redo', label: 'Redo', command: 'redo', history: true },
+  { id: 'bold', label: 'Bold', command: 'bold' },
+  { id: 'italic', label: 'Italic', command: 'italic' },
+  { id: 'underline', label: 'Underline', command: 'underline' },
+  { id: 'heading', label: 'Heading', command: 'formatBlock', value: 'h2' },
+  { id: 'list', label: 'Bulleted list', command: 'insertUnorderedList' },
+  { id: 'quote', label: 'Quote', command: 'formatBlock', value: 'blockquote' },
+  { id: 'code', label: 'Code block', command: 'formatBlock', value: 'pre' },
+];
 
-    const mediaQueryList = window.matchMedia(query);
-    
-    // Set initial value
-    setMatches(mediaQueryList.matches);
+function markdownToComposeHtml(markdown) {
+  if (!markdown.trim()) return '';
 
-    // Handler for changes
-    const handler = (e) => setMatches(e.matches);
-    
-    // Add listener (support both old and new API)
-    if (mediaQueryList.addEventListener) {
-      mediaQueryList.addEventListener('change', handler);
-    } else {
-      mediaQueryList.addListener(handler);
+  const lines = markdown.split('\n');
+  const html = [];
+  let listItems = [];
+  let inCodeBlock = false;
+  let codeLines = [];
+
+  const flushList = () => {
+    if (listItems.length === 0) return;
+    html.push(`<ul>${listItems.map((item) => `<li>${formatInlineMarkdown(item)}</li>`).join('')}</ul>`);
+    listItems = [];
+  };
+
+  const flushCode = () => {
+    if (!inCodeBlock) return;
+    html.push(`<pre>${escapeHtml(codeLines.join('\n'))}</pre>`);
+    codeLines = [];
+    inCodeBlock = false;
+  };
+
+  lines.forEach((line) => {
+    if (line.startsWith('```')) {
+      if (inCodeBlock) {
+        flushCode();
+      } else {
+        flushList();
+        inCodeBlock = true;
+      }
+      return;
     }
 
-    // Cleanup
-    return () => {
-      if (mediaQueryList.removeEventListener) {
-        mediaQueryList.removeEventListener('change', handler);
-      } else {
-        mediaQueryList.removeListener(handler);
-      }
-    };
-  }, [query]);
+    if (inCodeBlock) {
+      codeLines.push(line);
+      return;
+    }
 
-  return matches;
+    if (line.startsWith('- ')) {
+      listItems.push(line.slice(2));
+      return;
+    }
+
+    flushList();
+
+    if (!line.trim()) {
+      html.push('<p><br></p>');
+    } else if (line.startsWith('## ')) {
+      html.push(`<h2>${formatInlineMarkdown(line.slice(3))}</h2>`);
+    } else if (line.startsWith('> ')) {
+      html.push(`<blockquote>${formatInlineMarkdown(line.slice(2))}</blockquote>`);
+    } else {
+      html.push(`<p>${formatInlineMarkdown(line)}</p>`);
+    }
+  });
+
+  flushList();
+  flushCode();
+
+  return html.join('');
 }
 
-/**
- * Renders a read-only preview of the lesson being authored, including the title,
- * Markdown body, and any code snippets. Defined outside the parent component so
- * React does not recreate it on every render.
- *
- * @param {Object} props
- * @param {Object} props.form - Current lesson form state.
- * @param {string} props.form.title - Lesson title.
- * @param {string} props.form.content - Lesson body in Markdown.
- * @param {string} props.form.code_snippets - Raw textarea value of code snippets.
- * @returns {JSX.Element} Article element with rendered preview content.
- */
-const PreviewContent = ({ form }) => {
-  const codeSnippets = mapTextareaToCodeSnippets(form.code_snippets);
+function composeHtmlToMarkdown(html) {
+  const container = document.createElement('div');
+  container.innerHTML = html;
 
-  return (
-    <article className="space-y-4 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-4">
-      <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{form.title || 'Untitled Lesson'}</h3>
-      <MarkdownRenderer content={form.content || 'Start writing to see a preview...'} />
+  const convertNode = (node) => {
+    if (node.nodeType === Node.TEXT_NODE) return node.textContent;
+    if (node.nodeType !== Node.ELEMENT_NODE) return '';
 
-      {codeSnippets.length > 0 && (
-        <div className="space-y-3">
-          <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Code Snippets Preview</h4>
-          {codeSnippets.map((snippet, index) => (
-            <MarkdownRenderer
-              key={`preview-snippet-${index + 1}`}
-              content={`\`\`\`javascript\n${snippet}\n\`\`\``}
-            />
-          ))}
-        </div>
-      )}
-    </article>
-  );
-};
+    const text = Array.from(node.childNodes).map(convertNode).join('');
+    const tag = node.tagName.toLowerCase();
 
-/**
- * Admin page for managing lessons. Provides a responsive, tabbed interface with
- * three panels: a lesson creation/edit form, a live Markdown preview, and a
- * searchable/paginated list of existing lessons. On mobile a sticky bottom bar
- * exposes quick-save and reset actions regardless of the active tab.
- *
- * @returns {JSX.Element} The full lessons management admin page.
- */
+    if (tag === 'strong' || tag === 'b') return `**${text}**`;
+    if (tag === 'em' || tag === 'i') return `*${text}*`;
+    if (tag === 'u') return `<u>${text}</u>`;
+    if (tag === 'br') return '\n';
+    return text;
+  };
+
+  const blocks = Array.from(container.childNodes).map((node) => {
+    if (node.nodeType === Node.TEXT_NODE) return node.textContent;
+    if (node.nodeType !== Node.ELEMENT_NODE) return '';
+
+    const tag = node.tagName.toLowerCase();
+    const text = Array.from(node.childNodes).map(convertNode).join('').trimEnd();
+
+    if (tag === 'h2') return `## ${text}`.trimEnd();
+    if (tag === 'blockquote') return text.split('\n').map((line) => `> ${line}`).join('\n');
+    if (tag === 'pre') return `\`\`\`\n${node.textContent.trimEnd()}\n\`\`\``;
+    if (tag === 'ul') {
+      return Array.from(node.querySelectorAll('li'))
+        .map((item) => `- ${Array.from(item.childNodes).map(convertNode).join('').trimEnd()}`)
+        .join('\n');
+    }
+    if (tag === 'div' || tag === 'p') return text;
+    return text;
+  });
+
+  return blocks.join('\n\n').replace(/\n{3,}/g, '\n\n').trimStart();
+}
+
+function formatInlineMarkdown(text) {
+  return escapeHtml(text)
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(?!\*)(.*?)\*/g, '<em>$1</em>')
+    .replace(/&lt;u&gt;(.*?)&lt;\/u&gt;/g, '<u>$1</u>');
+}
+
+function escapeHtml(value) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 function LessonsManagerPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [lessons, setLessons] = useState([]);
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState(initialForm);
@@ -117,27 +168,15 @@ function LessonsManagerPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  // UI visibility controls
-  const [activeTab, setActiveTab] = useState('form'); // 'form' | 'preview' | 'list'
-  const [showForm, setShowForm] = useState(true);
-  const [showPreview, setShowPreview] = useState(true);
-  const [showList, setShowList] = useState(true);
-
-  // Form reference for proper validation
+  const [editorMode, setEditorMode] = useState('compose');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [activeFormats, setActiveFormats] = useState({});
   const formRef = useRef(null);
-
-  // Responsive hook for md breakpoint (768px)
-  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const composeRef = useRef(null);
 
   const isEditing = useMemo(() => Boolean(editingId), [editingId]);
+  const mode = location.pathname.endsWith('/create') ? 'create' : 'lessons';
 
-  /**
-   * Fetches all lessons and categories from the API and updates component state.
-   * Sets `loading` during the request and populates `error` on failure.
-   *
-   * @returns {Promise<void>}
-   */
   async function loadData() {
     try {
       setLoading(true);
@@ -176,16 +215,43 @@ function LessonsManagerPage() {
     setPage(1);
   }, [query, statusFilter]);
 
-  /**
-   * Handles lesson form submission. Creates a new lesson or updates the lesson
-   * currently being edited, reloads the list, resets the form, and switches to
-   * the list tab on mobile.
-   *
-   * @param {React.FormEvent<HTMLFormElement>} event - The form submit event.
-   * @returns {Promise<void>}
-   */
+  useEffect(() => {
+    if (editorMode !== 'compose' || !composeRef.current) return;
+    if (document.activeElement === composeRef.current) return;
+    composeRef.current.innerHTML = markdownToComposeHtml(form.content);
+  }, [editorMode, form.content]);
+
+
+  function readActiveFormats() {
+    const block = document.queryCommandValue('formatBlock')?.toLowerCase();
+    return {
+      bold: document.queryCommandState('bold'),
+      italic: document.queryCommandState('italic'),
+      underline: document.queryCommandState('underline'),
+      list: document.queryCommandState('insertUnorderedList'),
+      heading: block === 'h2',
+      quote: block === 'blockquote',
+      code: block === 'pre',
+    };
+  }
+
+  useEffect(() => {
+    function handleSelectionChange() {
+      if (!composeRef.current?.contains(document.activeElement)) return;
+      setActiveFormats(readActiveFormats());
+    }
+
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+  }, []);
+
   async function handleSubmit(event) {
     event.preventDefault();
+
+    if (!form.content.trim()) {
+      setError('Lesson content cannot be empty.');
+      return;
+    }
 
     const payload = {
       ...form,
@@ -201,31 +267,14 @@ function LessonsManagerPage() {
         await createLesson(payload);
       }
 
-      setForm(initialForm);
-      setEditingId(null);
+      resetComposer();
       await loadData();
-
-      // After saving, show list on mobile for quick access
-      setActiveTab('list');
     } catch (err) {
       reportError('Admin lesson save', err);
       setError(friendlyErrorMessage('Unable to save lesson right now. Please try again.'));
     }
   }
 
-  /**
-   * Populates the form with the given lesson's data so the admin can edit it.
-   * On mobile, switches the active tab to the form panel.
-   *
-   * @param {Object} lesson - The lesson object to edit.
-   * @param {string|number} lesson.id - Unique lesson identifier.
-   * @param {string} lesson.title - Lesson title.
-   * @param {string} lesson.content - Lesson body in Markdown.
-   * @param {Array} lesson.code_snippets - Existing code snippets array.
-   * @param {string} lesson.featured_image - URL of the featured image.
-   * @param {string|number} lesson.category_id - Associated category identifier.
-   * @param {string} lesson.status - Publication status of the lesson.
-   */
   function handleEdit(lesson) {
     setEditingId(lesson.id);
     setForm({
@@ -236,26 +285,16 @@ function LessonsManagerPage() {
       category_id: lesson.category_id ?? '',
       status: lesson.status ?? 'draft',
     });
-
-    // On mobile, switch to form when editing
-    setActiveTab('form');
+    setShowAdvanced(Boolean(lesson.code_snippets?.length));
+    setEditorMode('compose');
+    navigate('/admin/create');
   }
 
-  /**
-   * Deletes the lesson with the given ID. If the deleted lesson is currently being
-   * edited, the form is reset. Reloads the lesson list on success.
-   *
-   * @param {string|number} id - The ID of the lesson to delete.
-   * @returns {Promise<void>}
-   */
   async function handleDelete(id) {
     try {
       setError('');
       await deleteLesson(id);
-      if (editingId === id) {
-        setEditingId(null);
-        setForm(initialForm);
-      }
+      if (editingId === id) resetComposer();
       await loadData();
     } catch (err) {
       reportError('Admin lesson delete', err);
@@ -263,16 +302,6 @@ function LessonsManagerPage() {
     }
   }
 
-  /**
-   * Updates the publication status of a lesson. No-ops if the lesson already has
-   * the requested status. Reloads the lesson list on success.
-   *
-   * @param {Object} lesson - The lesson whose status should change.
-   * @param {string|number} lesson.id - Unique lesson identifier.
-   * @param {string} lesson.status - Current status of the lesson.
-   * @param {'draft'|'published'|'archived'} nextStatus - The desired new status.
-   * @returns {Promise<void>}
-   */
   async function handleStatusChange(lesson, nextStatus) {
     if (lesson.status === nextStatus) return;
 
@@ -286,386 +315,549 @@ function LessonsManagerPage() {
     }
   }
 
-  /**
-   * Triggers form submission via the DOM `requestSubmit()` API so that native
-   * HTML5 validation runs before `handleSubmit` is called. Used by the mobile
-   * sticky action bar's Save/Update button.
-   */
-  function handleMobileSave() {
-    if (formRef.current) {
-      // Use requestSubmit() to trigger proper HTML5 validation
-      formRef.current.requestSubmit();
+  function updateField(field, value) {
+    setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function resetComposer() {
+    setEditingId(null);
+    setForm(initialForm);
+    setEditorMode('compose');
+    setShowAdvanced(false);
+    if (composeRef.current) composeRef.current.innerHTML = '';
+  }
+
+  function clearBody() {
+    updateField('content', '');
+    if (composeRef.current) {
+      composeRef.current.innerHTML = '';
+      composeRef.current.focus();
     }
+  }
+
+  function handleComposeInput() {
+    if (!composeRef.current) return;
+    updateField('content', composeHtmlToMarkdown(composeRef.current.innerHTML));
+  }
+
+  function runToolbarCommand(action) {
+    if (editorMode !== 'compose') {
+      setEditorMode('compose');
+      window.requestAnimationFrame(() => runToolbarCommand(action));
+      return;
+    }
+
+    composeRef.current?.focus();
+
+    if (action.command === 'formatBlock' && activeFormats[action.id]) {
+      document.execCommand('formatBlock', false, 'p');
+    } else {
+      document.execCommand(action.command, false, action.value ?? null);
+    }
+
+    handleComposeInput();
+    setActiveFormats(readActiveFormats());
+  }
+
+  function handleEditorKeyDown(event) {
+    if (!(event.ctrlKey || event.metaKey)) return;
+
+    const shortcut = event.key.toLowerCase();
+    const actionMap = {
+      b: 'bold',
+      i: 'italic',
+      u: 'underline',
+      z: event.shiftKey ? 'redo' : 'undo',
+      y: 'redo',
+    };
+    const actionId = actionMap[shortcut];
+    if (!actionId) return;
+
+    const action = TOOLBAR_ACTIONS.find((item) => item.id === actionId);
+    if (!action) return;
+
+    event.preventDefault();
+    runToolbarCommand(action);
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Lessons</h1>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">{mode === 'create' ? 'Create lesson' : 'Lessons'}</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            {mode === 'create' ? 'Write in Compose mode, switch to Markdown only when you need the source.' : 'Search, edit, preview, and manage published lessons.'}
+          </p>
+        </div>
+        {mode === 'create' ? (
+          <button
+            type="button"
+            onClick={resetComposer}
+            className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            New blank lesson
+          </button>
+        ) : (
+          <Link
+            to="/admin/create"
+            className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700"
+          >
+            Create lesson
+          </Link>
+        )}
+      </header>
 
       {error && (
-        <p className="rounded border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/15 px-3 py-2 text-sm text-red-700 dark:text-red-300">{error}</p>
+        <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/15 dark:text-red-300">{error}</p>
       )}
 
-      {/* Mobile tab bar */}
-      <div className="block md:hidden">
-        <nav className="flex gap-2 overflow-auto pb-2">
-          <button
-            onClick={() => setActiveTab('form')}
-            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-              activeTab === 'form'
-                ? 'bg-indigo-600 text-white'
-                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800'
-            }`}
-          >
-            Create
-          </button>
-          <button
-            onClick={() => setActiveTab('preview')}
-            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-              activeTab === 'preview'
-                ? 'bg-indigo-600 text-white'
-                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800'
-            }`}
-          >
-            Preview
-          </button>
-          <button
-            onClick={() => setActiveTab('list')}
-            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-              activeTab === 'list'
-                ? 'bg-indigo-600 text-white'
-                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800'
-            }`}
-          >
-            Lessons
-          </button>
-        </nav>
+      {mode === 'create' ? (
+        <LessonEditor
+          activeFormats={activeFormats}
+          composeRef={composeRef}
+          form={form}
+          categories={categories}
+          editorMode={editorMode}
+          formRef={formRef}
+          isEditing={isEditing}
+          showAdvanced={showAdvanced}
+          onClearBody={clearBody}
+          onComposeInput={handleComposeInput}
+          onEditorModeChange={setEditorMode}
+          onFieldChange={updateField}
+          onRunCommand={runToolbarCommand}
+          onEditorKeyDown={handleEditorKeyDown}
+          onShowAdvancedChange={setShowAdvanced}
+          onSubmit={handleSubmit}
+          onReset={resetComposer}
+          editingId={editingId}
+        />
+      ) : (
+        <LessonsTable
+          filteredLessons={filteredLessons}
+          loading={loading}
+          page={page}
+          pagedLessons={pagedLessons}
+          query={query}
+          statusFilter={statusFilter}
+          totalPages={totalPages}
+          onDelete={handleDelete}
+          onEdit={handleEdit}
+          onPageChange={setPage}
+          onQueryChange={setQuery}
+          onStatusChange={handleStatusChange}
+          onStatusFilterChange={setStatusFilter}
+        />
+      )}
+    </div>
+  );
+}
+
+
+function shortcutLabel(actionId) {
+  const labels = {
+    undo: 'Ctrl/Cmd + Z',
+    redo: 'Ctrl/Cmd + Y or Ctrl/Cmd + Shift + Z',
+    bold: 'Ctrl/Cmd + B',
+    italic: 'Ctrl/Cmd + I',
+    underline: 'Ctrl/Cmd + U',
+  };
+
+  return labels[actionId] ?? undefined;
+}
+
+function LessonEditor({
+  activeFormats,
+  composeRef,
+  form,
+  categories,
+  editorMode,
+  formRef,
+  isEditing,
+  showAdvanced,
+  onClearBody,
+  onComposeInput,
+  onEditorModeChange,
+  onFieldChange,
+  onRunCommand,
+  onEditorKeyDown,
+  onShowAdvancedChange,
+  onSubmit,
+  onReset,
+  editingId,
+}) {
+  return (
+    <form
+      ref={formRef}
+      onSubmit={onSubmit}
+      className="space-y-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+    >
+      <div className="flex flex-col gap-2 border-b border-slate-100 pb-4 dark:border-slate-800 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-xl font-semibold">{isEditing ? 'Edit lesson' : 'New lesson'}</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Compose works like a simple document editor. Markdown shows the saved source.</p>
+        </div>
+        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+          {editorMode === 'compose' ? 'Compose view' : 'Markdown view'}
+        </span>
       </div>
 
-      {/* Desktop / Tablet controls to toggle visibility */}
-      <div className="hidden md:flex md:items-center md:justify-end md:gap-3">
-        <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={showForm}
-            onChange={() => setShowForm((s) => !s)}
-            className="accent-indigo-600 dark:accent-indigo-500"
-          />{' '}
-          Form
-        </label>
-        <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={showPreview}
-            onChange={() => setShowPreview((s) => !s)}
-            className="accent-indigo-600 dark:accent-indigo-500"
-          />{' '}
-          Preview
-        </label>
-        <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={showList}
-            onChange={() => setShowList((s) => !s)}
-            className="accent-indigo-600 dark:accent-indigo-500"
-          />{' '}
-          List
-        </label>
-      </div>
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium">Title</span>
+        <input
+          type="text"
+          value={form.title}
+          onChange={(e) => onFieldChange('title', e.target.value)}
+          className="w-full rounded-lg border border-slate-300 px-3 py-3 text-lg font-semibold dark:border-slate-700"
+          placeholder="Add lesson title"
+          required
+        />
+      </label>
 
-      {/* Responsive layout: mobile shows single active panel; md shows 2 columns; lg shows 3 columns */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {/* Form (left / top) */}
-        {showForm && (activeTab === 'form' || isDesktop) && (
-          <form
-            ref={formRef}
-            onSubmit={handleSubmit}
-            className="space-y-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm"
+      <div className="grid gap-4 sm:grid-cols-3">
+        <label className="block sm:col-span-2">
+          <span className="mb-1 block text-sm font-medium">Category</span>
+          <select
+            value={form.category_id}
+            onChange={(e) => onFieldChange('category_id', e.target.value)}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-700"
           >
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium">Title</span>
-              <input
-                type="text"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
-                required
-              />
-            </label>
+            <option value="">No category</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name} ({category.difficulty})
+              </option>
+            ))}
+          </select>
+        </label>
 
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium">Content (Markdown)</span>
-              <textarea
-                rows={10}
-                value={form.content}
-                onChange={(e) => setForm({ ...form, content: e.target.value })}
-                className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2 font-mono"
-                required
-              />
-            </label>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium">Category</span>
-                <select
-                  value={form.category_id}
-                  onChange={(e) => setForm({ ...form, category_id: e.target.value })}
-                  className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
-                >
-                  <option value="">No category</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name} ({category.difficulty})
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium">Status</span>
-                <select
-                  value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
-                >
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
-                  <option value="archived">Archived</option>
-                </select>
-              </label>
-            </div>
-
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium">Featured Image URL</span>
-              <input
-                type="url"
-                value={form.featured_image}
-                onChange={(e) => setForm({ ...form, featured_image: e.target.value })}
-                className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium">Code Snippets (split snippets with --- line)</span>
-              <textarea
-                rows={6}
-                value={form.code_snippets}
-                onChange={(e) => setForm({ ...form, code_snippets: e.target.value })}
-                className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2 font-mono"
-                placeholder="console.log('Hello World');"
-              />
-            </label>
-
-            <div className="flex flex-wrap gap-2">
-              <button type="submit" className="rounded bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700 transition-colors">
-                {isEditing ? 'Update Lesson' : 'Create Lesson'}
-              </button>
-              {isEditing && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingId(null);
-                    setForm(initialForm);
-                  }}
-                  className="rounded bg-slate-200 dark:bg-slate-700 px-4 py-2 font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 transition-colors"
-                >
-                  Cancel
-                </button>
-              )}
-              {isEditing && (
-                <Link
-                  to={`/lesson/${editingId}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-800 transition-colors"
-                >
-                  Open Preview Page
-                </Link>
-              )}
-            </div>
-          </form>
-        )}
-
-        {/* Preview (middle) */}
-        {showPreview && (activeTab === 'preview' || isDesktop) && (
-          <section className="space-y-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-lg font-semibold">Live Preview</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">{isEditing ? 'Previewing current lesson edits.' : 'Previewing lesson draft before publishing.'}</p>
-            </div>
-
-            <PreviewContent form={form} />
-          </section>
-        )}
-
-        {/* List (right) */}
-        {showList && (activeTab === 'list' || isDesktop) && (
-          <div className="space-y-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="w-full rounded border border-slate-300 dark:border-slate-700 px-3 py-2 sm:max-w-xs"
-                placeholder="Search lessons..."
-              />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="rounded border border-slate-300 dark:border-slate-700 px-3 py-2"
-              >
-                <option value="all">All statuses</option>
-                <option value="draft">Draft</option>
-                <option value="published">Published</option>
-                <option value="archived">Archived</option>
-              </select>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50 dark:bg-slate-950">
-                  <tr>
-                    <th className="px-4 py-2 text-left">Title</th>
-                    <th className="px-4 py-2 text-left">Status</th>
-                    <th className="px-4 py-2 text-left">Views</th>
-                    <th className="px-4 py-2 text-left">Category</th>
-                    <th className="px-4 py-2 text-left">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {loading ? (
-                    <tr>
-                      <td className="px-4 py-4 text-slate-500 dark:text-slate-400" colSpan={5}>
-                        Loading lessons...
-                      </td>
-                    </tr>
-                  ) : (
-                    pagedLessons.map((lesson) => (
-                      <tr key={lesson.id}>
-                        <td className="px-4 py-2 font-medium">{lesson.title}</td>
-                        <td className="px-4 py-2">
-                          <span className={`rounded-full px-2 py-1 text-xs font-semibold ${badgeClass(lesson.status)}`}>
-                            {lesson.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2 font-semibold text-indigo-700 dark:text-indigo-200">{lesson.views_count ?? 0}</td>
-                        <td className="px-4 py-2">{lesson.categories?.name ?? 'N/A'}</td>
-                        <td className="px-4 py-2">
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              className="rounded bg-amber-100 dark:bg-amber-500/15 px-3 py-1 text-amber-800 dark:text-amber-200 hover:bg-amber-200 transition-colors"
-                              onClick={() => handleEdit(lesson)}
-                            >
-                              Edit
-                            </button>
-                            <Link
-                              to={`/lesson/${lesson.id}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="rounded bg-slate-100 dark:bg-slate-800 px-3 py-1 text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition-colors"
-                            >
-                              {lesson.status === 'published' ? 'View' : 'Preview'}
-                            </Link>
-                            {lesson.status !== 'published' && (
-                              <button
-                                type="button"
-                                className="rounded bg-emerald-100 dark:bg-emerald-500/15 px-3 py-1 text-emerald-800 hover:bg-emerald-200 transition-colors"
-                                onClick={() => handleStatusChange(lesson, 'published')}
-                              >
-                                Publish
-                              </button>
-                            )}
-                            {lesson.status !== 'archived' && (
-                              <button
-                                type="button"
-                                className="rounded bg-slate-200 dark:bg-slate-700 px-3 py-1 text-slate-700 dark:text-slate-200 hover:bg-slate-300 transition-colors"
-                                onClick={() => handleStatusChange(lesson, 'archived')}
-                              >
-                                Archive
-                              </button>
-                            )}
-                            {lesson.status !== 'draft' && (
-                              <button
-                                type="button"
-                                className="rounded bg-indigo-100 dark:bg-indigo-500/20 px-3 py-1 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-200 transition-colors"
-                                onClick={() => handleStatusChange(lesson, 'draft')}
-                              >
-                                Move to Draft
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              className="rounded bg-red-100 dark:bg-red-500/15 px-3 py-1 text-red-700 dark:text-red-300 hover:bg-red-200 transition-colors"
-                              onClick={() => handleDelete(lesson.id)}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-slate-500 dark:text-slate-400">Showing {pagedLessons.length} of {filteredLessons.length} lessons</p>
-              <div className="space-x-2">
-                <button
-                  type="button"
-                  className="rounded border border-slate-300 dark:border-slate-700 px-3 py-1 disabled:opacity-50 hover:bg-slate-50 transition-colors"
-                  disabled={page <= 1}
-                  onClick={() => setPage((prev) => prev - 1)}
-                >
-                  Prev
-                </button>
-                <span className="text-sm text-slate-600 dark:text-slate-300">
-                  Page {page} / {totalPages}
-                </span>
-                <button
-                  type="button"
-                  className="rounded border border-slate-300 dark:border-slate-700 px-3 py-1 disabled:opacity-50 hover:bg-slate-50 transition-colors"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((prev) => prev + 1)}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <label className="block">
+          <span className="mb-1 block text-sm font-medium">Status</span>
+          <select
+            value={form.status}
+            onChange={(e) => onFieldChange('status', e.target.value)}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-700"
+          >
+            <option value="draft">Draft</option>
+            <option value="published">Published</option>
+            <option value="archived">Archived</option>
+          </select>
+        </label>
       </div>
 
-      {/* Mobile bottom sticky action bar for quick submit when form is active */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden">
-        <div className="mx-auto max-w-7xl px-4 py-2">
-          <div className="flex items-center justify-between gap-2 rounded-t-md bg-white/90 dark:bg-slate-900/90 px-3 py-2 shadow backdrop-blur">
-            <div className="text-sm text-slate-700 dark:text-slate-200">{isEditing ? 'Editing lesson' : 'Create new lesson'}</div>
-            <div className="flex gap-2">
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium">Featured image URL</span>
+        <input
+          type="url"
+          value={form.featured_image}
+          onChange={(e) => onFieldChange('featured_image', e.target.value)}
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-700"
+          placeholder="https://example.com/image.jpg"
+        />
+      </label>
+
+      <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50 p-2 dark:border-slate-800 dark:bg-slate-950">
+          <div className="flex rounded-lg border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-900">
+            {EDITOR_TABS.map((tab) => (
               <button
+                key={tab.id}
                 type="button"
-                onClick={() => {
-                  setEditingId(null);
-                  setForm(initialForm);
-                }}
-                className="rounded bg-slate-200 dark:bg-slate-700 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                onClick={() => onEditorModeChange(tab.id)}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                  editorMode === tab.id
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                }`}
               >
-                Reset
+                {tab.label}
               </button>
-              <button
-                type="button"
-                onClick={handleMobileSave}
-                className="rounded bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
-              >
-                {isEditing ? 'Update' : 'Save'}
-              </button>
-            </div>
+            ))}
           </div>
+
+          <div className="flex flex-wrap gap-1">
+            {TOOLBAR_ACTIONS.map((action) => (
+              <button
+                key={action.id}
+                type="button"
+                aria-pressed={action.history ? undefined : Boolean(activeFormats[action.id])}
+                title={shortcutLabel(action.id)}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => onRunCommand(action)}
+                className={`rounded-md border px-2.5 py-1.5 text-xs font-medium transition ${
+                  !action.history && activeFormats[action.id]
+                    ? 'border-indigo-500 bg-indigo-600 text-white'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
+                }`}
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={onClearBody}
+            className="ml-auto rounded-md px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10"
+          >
+            Clear body
+          </button>
+        </div>
+
+        {editorMode === 'compose' ? (
+          <div
+            ref={composeRef}
+            contentEditable
+            role="textbox"
+            aria-label="Lesson body"
+            aria-multiline="true"
+            aria-required="true"
+            data-placeholder="Write your lesson here..."
+            onInput={onComposeInput}
+            onKeyDown={onEditorKeyDown}
+            className="prose min-h-[520px] max-w-none px-5 py-4 text-slate-900 outline-none empty:before:text-slate-400 empty:before:content-[attr(data-placeholder)] dark:prose-invert dark:text-slate-100"
+          />
+        ) : (
+          <label className="block">
+            <span className="sr-only">Markdown source</span>
+            <textarea
+              rows={22}
+              value={form.content}
+              onChange={(e) => onFieldChange('content', e.target.value)}
+              onKeyDown={onEditorKeyDown}
+              className="min-h-[520px] w-full border-0 px-5 py-4 font-mono text-sm leading-7 text-slate-900 focus:ring-0 dark:text-slate-100"
+              placeholder="Write or edit Markdown source here..."
+              required
+            />
+          </label>
+        )}
+
+        <div className="border-t border-slate-100 px-4 py-2 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
+          {editorMode === 'compose'
+            ? 'Select text, then use the toolbar. Clicking an active format turns it off for the selected text or next typing.'
+            : 'Markdown mode is the saved source view for precise editing.'}
         </div>
       </div>
-    </div>
+
+      <div className="rounded-xl border border-slate-200 dark:border-slate-800">
+        <button
+          type="button"
+          onClick={() => onShowAdvancedChange((current) => !current)}
+          className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold text-slate-700 dark:text-slate-200"
+        >
+          Advanced: extra code snippets
+          <span className="text-xs text-slate-500">{showAdvanced ? 'Hide' : 'Show'}</span>
+        </button>
+        {showAdvanced && (
+          <div className="space-y-2 border-t border-slate-100 p-4 dark:border-slate-800">
+            <p className="text-sm text-slate-500 dark:text-slate-400">Optional. Most examples can go directly in the lesson body using the Code block button.</p>
+            <textarea
+              rows={5}
+              value={form.code_snippets}
+              onChange={(e) => onFieldChange('code_snippets', e.target.value)}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm dark:border-slate-700"
+              placeholder="console.log('Hello World');"
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white transition-colors hover:bg-indigo-700">
+          {isEditing ? 'Update lesson' : 'Create lesson'}
+        </button>
+        <button
+          type="button"
+          onClick={onReset}
+          className="rounded-lg bg-slate-200 px-4 py-2 font-medium text-slate-700 transition-colors hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+        >
+          Clear all
+        </button>
+        {isEditing ? (
+          <Link
+            to={`/lesson/${editingId}`}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white transition-colors hover:bg-slate-800"
+          >
+            Open preview on site
+          </Link>
+        ) : (
+          <span className="rounded-lg border border-dashed border-slate-300 px-4 py-2 text-sm font-medium text-slate-500 dark:border-slate-700 dark:text-slate-400">
+            Save lesson to enable site preview
+          </span>
+        )}
+      </div>
+    </form>
+  );
+}
+
+function LessonsTable({
+  filteredLessons,
+  loading,
+  page,
+  pagedLessons,
+  query,
+  statusFilter,
+  totalPages,
+  onDelete,
+  onEdit,
+  onPageChange,
+  onQueryChange,
+  onStatusChange,
+  onStatusFilterChange,
+}) {
+  return (
+    <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">All lessons</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Search, edit, and manage publication status.</p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => onQueryChange(e.target.value)}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 sm:w-72 dark:border-slate-700"
+            placeholder="Search lessons..."
+          />
+          <select
+            value={statusFilter}
+            onChange={(e) => onStatusFilterChange(e.target.value)}
+            className="rounded-lg border border-slate-300 px-3 py-2 dark:border-slate-700"
+          >
+            <option value="all">All statuses</option>
+            <option value="draft">Draft</option>
+            <option value="published">Published</option>
+            <option value="archived">Archived</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
+        <table className="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
+          <thead className="bg-slate-50 dark:bg-slate-950">
+            <tr>
+              <th className="w-2/5 px-4 py-3 text-left font-semibold">Title</th>
+              <th className="px-4 py-3 text-left font-semibold">Status</th>
+              <th className="px-4 py-3 text-left font-semibold">Views</th>
+              <th className="px-4 py-3 text-left font-semibold">Category</th>
+              <th className="px-4 py-3 text-right font-semibold">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            {loading ? (
+              <tr>
+                <td className="px-4 py-4 text-slate-500 dark:text-slate-400" colSpan={5}>
+                  Loading lessons...
+                </td>
+              </tr>
+            ) : pagedLessons.length === 0 ? (
+              <tr>
+                <td className="px-4 py-6 text-center text-slate-500 dark:text-slate-400" colSpan={5}>
+                  No lessons match your filters.
+                </td>
+              </tr>
+            ) : (
+              pagedLessons.map((lesson) => (
+                <tr key={lesson.id} className="align-top transition hover:bg-slate-50 dark:hover:bg-slate-950">
+                  <td className="px-4 py-3">
+                    <p className="font-medium text-slate-900 dark:text-slate-100">{lesson.title}</p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">ID: {lesson.id}</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`rounded-full px-2 py-1 text-xs font-semibold ${badgeClass(lesson.status)}`}>
+                      {lesson.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 font-semibold text-indigo-700 dark:text-indigo-200">{lesson.views_count ?? 0}</td>
+                  <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{lesson.categories?.name ?? 'N/A'}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <button
+                        type="button"
+                        className="rounded-md bg-amber-100 px-3 py-1 text-amber-800 transition-colors hover:bg-amber-200 dark:bg-amber-500/15 dark:text-amber-200"
+                        onClick={() => onEdit(lesson)}
+                      >
+                        Edit
+                      </button>
+                      <Link
+                        to={`/lesson/${lesson.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-md bg-slate-100 px-3 py-1 text-slate-700 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200"
+                      >
+                        {lesson.status === 'published' ? 'View' : 'Preview'}
+                      </Link>
+                      {lesson.status !== 'published' && (
+                        <button
+                          type="button"
+                          className="rounded-md bg-emerald-100 px-3 py-1 text-emerald-800 transition-colors hover:bg-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-200"
+                          onClick={() => onStatusChange(lesson, 'published')}
+                        >
+                          Publish
+                        </button>
+                      )}
+                      {lesson.status !== 'archived' && (
+                        <button
+                          type="button"
+                          className="rounded-md bg-slate-200 px-3 py-1 text-slate-700 transition-colors hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200"
+                          onClick={() => onStatusChange(lesson, 'archived')}
+                        >
+                          Archive
+                        </button>
+                      )}
+                      {lesson.status !== 'draft' && (
+                        <button
+                          type="button"
+                          className="rounded-md bg-indigo-100 px-3 py-1 text-indigo-700 transition-colors hover:bg-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-200"
+                          onClick={() => onStatusChange(lesson, 'draft')}
+                        >
+                          Draft
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="rounded-md bg-red-100 px-3 py-1 text-red-700 transition-colors hover:bg-red-200 dark:bg-red-500/15 dark:text-red-300"
+                        onClick={() => onDelete(lesson.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-slate-500 dark:text-slate-400">Showing {pagedLessons.length} of {filteredLessons.length} lessons</p>
+        <div className="space-x-2">
+          <button
+            type="button"
+            className="rounded border border-slate-300 px-3 py-1 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
+            disabled={page <= 1}
+            onClick={() => onPageChange((prev) => prev - 1)}
+          >
+            Prev
+          </button>
+          <span className="text-sm text-slate-600 dark:text-slate-300">
+            Page {page} / {totalPages}
+          </span>
+          <button
+            type="button"
+            className="rounded border border-slate-300 px-3 py-1 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
+            disabled={page >= totalPages}
+            onClick={() => onPageChange((prev) => prev + 1)}
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    </section>
   );
 }
 
