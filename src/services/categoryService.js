@@ -4,6 +4,7 @@ export async function fetchCategories() {
   const { data, error } = await supabase
     .from('categories')
     .select('id, name, difficulty, lessons(count)')
+    .eq('lessons.status', 'published')
     .order('name', { ascending: true });
 
   if (error) throw error;
