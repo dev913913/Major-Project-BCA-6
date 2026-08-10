@@ -69,7 +69,7 @@ function Header() {
     <header className={`sticky top-0 z-50 border-b border-slate-200/70 dark:border-slate-800/80 bg-white/90 dark:bg-slate-950/90 backdrop-blur transition ${scrolled ? 'shadow-sm' : ''}`}>
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         <Link to="/" className="flex flex-col leading-tight">
-          <span className="text-xl font-black tracking-tight text-indigo-600 dark:text-indigo-300">Codev</span>
+          <span className="text-xl font-black tracking-tight text-indigo-600 dark:text-purple-400 dark:drop-shadow-[0_0_8px_rgba(192,132,252,0.8)]">Codev</span>
           <span className="text-xs text-slate-500 dark:text-slate-400">by Dev Kumar</span>
         </Link>
 
