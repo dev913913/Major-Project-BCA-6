@@ -38,6 +38,17 @@ function HomePage() {
   );
 
   const totalViews = useMemo(() => lessons.reduce((sum, lesson) => sum + (lesson.views_count ?? 0), 0), [lessons]);
+  const heroStats = [
+    { value: lessons.length, label: 'Lessons' },
+    { value: categories.length, label: 'Categories' },
+    { value: totalViews, label: 'Views' },
+  ];
+
+  const learningSteps = [
+    ['1', 'Pick a topic', 'Filter lessons by category so you can stay focused on one skill at a time.'],
+    ['2', 'Read with context', 'Use practical examples, summaries, and reading-time cues to plan your sessions.'],
+    ['3', 'Practice and revisit', 'Come back to popular lessons whenever you need a quick refresher.'],
+  ];
 
   return (
     <div className="space-y-20 pb-8">
@@ -55,13 +66,36 @@ function HomePage() {
       <section className="relative flex min-h-[85vh] items-center overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-violet-600 to-blue-500 px-6 py-20 text-white shadow-xl sm:px-10">
         <div className="absolute -right-20 -top-16 h-72 w-72 rounded-full bg-white/20 blur-3xl" aria-hidden="true" />
         <div className="absolute -bottom-20 left-0 h-80 w-80 rounded-full bg-cyan-300/20 blur-3xl" aria-hidden="true" />
-        <div className="relative z-10 max-w-3xl space-y-6">
-          <p className="inline-flex rounded-full bg-white/20 px-4 py-1 text-sm font-medium">Created by Dev Kumar</p>
-          <h1 className="text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">Learn Programming with Codev</h1>
-          <p className="max-w-2xl text-lg text-indigo-50">Master coding through interactive lessons and hands-on practice.</p>
-          <Link to="/lessons" className="inline-block rounded-xl bg-white dark:bg-slate-900 px-6 py-3 font-semibold text-indigo-700 dark:text-indigo-200 shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl">
-            Browse Lessons
-          </Link>
+        <div className="relative z-10 grid w-full items-center gap-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
+          <div className="max-w-3xl space-y-6">
+            <p className="inline-flex rounded-full bg-white/20 px-4 py-1 text-sm font-medium backdrop-blur">Created by Dev Kumar</p>
+            <h1 className="text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">Learn Programming with Codev</h1>
+            <p className="max-w-2xl text-lg text-indigo-50">Master coding through interactive lessons and hands-on practice, with a simple path from first concept to confident revision.</p>
+            <div className="flex flex-wrap gap-3">
+              <Link to="/lessons" className="inline-flex items-center rounded-xl bg-white px-6 py-3 font-semibold text-indigo-700 shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl dark:bg-slate-900 dark:text-indigo-200">
+                Browse Lessons
+              </Link>
+              <Link to="/categories" className="inline-flex items-center rounded-xl border border-white/40 bg-white/10 px-6 py-3 font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/20">
+                Choose a Topic
+              </Link>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-white/25 bg-white/15 p-5 shadow-2xl backdrop-blur" aria-label="Codev learning snapshot">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-indigo-100">Learning snapshot</p>
+            <div className="mt-5 grid grid-cols-3 gap-3">
+              {heroStats.map((stat) => (
+                <div key={stat.label} className="rounded-2xl bg-white/15 p-3 text-center">
+                  <p className="text-2xl font-black">{Number(stat.value).toLocaleString()}</p>
+                  <p className="text-xs text-indigo-100">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-5 rounded-2xl bg-slate-950/25 p-4">
+              <p className="text-sm font-semibold">Suggested first move</p>
+              <p className="mt-1 text-sm text-indigo-50">Start with a category, complete one short lesson, then bookmark the most viewed lessons for revision.</p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -80,6 +114,22 @@ function HomePage() {
             <article key={title} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg">
               <p className="text-3xl" aria-hidden="true">{icon}</p>
               <h3 className="mt-3 text-lg font-bold">{title}</h3>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-6">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold">A smoother way to learn</h2>
+          <p className="mt-2 text-slate-600 dark:text-slate-300">Follow a lightweight path that keeps lessons approachable for normal users.</p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {learningSteps.map(([step, title, text]) => (
+            <article key={title} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-lg font-black text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-200">{step}</span>
+              <h3 className="mt-4 text-lg font-bold">{title}</h3>
               <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{text}</p>
             </article>
           ))}
