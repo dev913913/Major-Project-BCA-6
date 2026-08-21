@@ -14,7 +14,8 @@ The site uses one shared logo file for both the browser tab favicon and the logo
 
 If your logo is a PNG, place it in `public/` and update these references:
 
-- In `index.html`, change `/brand-logo.svg` in the favicon links to your PNG file name.
+- In `index.html`, change the favicon `href` from `/brand-logo.svg` to your PNG file name, and change `type="image/svg+xml"` to `type="image/png"` or remove the `type` attribute.
+- In `index.html`, change the `apple-touch-icon` `href` from `/brand-logo.svg` to your PNG file name.
 - In `src/components/Header.jsx`, change the image `src` from `/brand-logo.svg` to your PNG file name.
 
 Recommended sizes:
