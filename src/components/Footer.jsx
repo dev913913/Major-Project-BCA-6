@@ -16,7 +16,7 @@ function Footer() {
             <Link to="/categories">Categories</Link>
             <Link to="/admin">Admin</Link>
           </div>
-          <p className="text-xs">Social: <a href="https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://in.linkedin.com/in/dev-kumar-186288242&ved=2ahUKEwiMscfT3b6WAxUWUGwGHadKKTIQFnoFCIcBEAE&usg=AOvVaw2wQljXhf5Af8l_xKmhhZux" target="_blank" rel="noopener noreferrer">Github</a>
+          <p className="text-xs">Social: <a href="https://in.linkedin.com/in/dev-kumar-186288242" target="_blank" rel="noopener noreferrer">LinkedIn</a>
  · <a href="https://github.com/dev913913" target="_blank" rel="noopener noreferrer">GitHub</a> · <a href="https://youtube.com/@bewakoofenglish-wo8ze?si=N8KELM2MAakTjvoo" target="_blank" rel="noopener noreferrer">YouTube</a></p>
         </div>
       </div>
