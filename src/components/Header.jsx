@@ -79,7 +79,7 @@ function Header() {
             />
             <span className="text-xl font-black tracking-tight text-indigo-600 dark:text-indigo-300">Codev</span>
           </Link>
-          <span className="text-xs text-slate-500 dark:text-slate-400">by <DevKumarLink /></span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">by{' '}<DevKumarLink /></span>
         </div>
 
         <div className="flex items-center gap-2 md:hidden">

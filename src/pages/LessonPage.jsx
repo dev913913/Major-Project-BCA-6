@@ -121,7 +121,7 @@ function LessonPage() {
             <span>📅 {new Date(lesson.created_at).toLocaleDateString()}</span>
             <span>👁 {lesson.views_count ?? 0} views</span>
             <span>🕒 {readingTime} min read</span>
-            <span>✍️ By <DevKumarLink /></span>
+            <span>✍️ By{' '}<DevKumarLink /></span>
           </div>
         </div>
       </header>
@@ -147,7 +147,7 @@ function LessonPage() {
           <div className="sticky top-24 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
             <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Article info</h2>
             <ul className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
-              <li>Author: <DevKumarLink /></li>
+              <li>Author:{' '}<DevKumarLink /></li>
               <li>Category: {lesson.categories?.name ?? 'General'}</li>
               <li>Reading time: {readingTime} minutes</li>
             </ul>

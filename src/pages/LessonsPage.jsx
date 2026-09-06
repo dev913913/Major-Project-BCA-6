@@ -4,7 +4,6 @@ import LessonCard from '../components/LessonCard';
 import { useSeo } from '../components/Seo';
 import { fetchPublishedLessons } from '../services/lessonService';
 import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
-import DevKumarLink from '../components/DevKumarLink';
 
 const SORT_OPTIONS = [
   { value: 'recent', label: 'Most recent' },
@@ -101,7 +100,7 @@ function LessonsPage() {
     <section className="space-y-8">
       <header className="rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-sm">
         <h1 className="text-4xl font-black text-slate-900 dark:text-slate-100">Explore Lessons</h1>
-        <p className="mt-2 text-slate-600 dark:text-slate-300">Curated programming lessons by <DevKumarLink /></p>
+        <p className="mt-2 text-slate-600 dark:text-slate-300">Curated programming lessons by Dev Kumar</p>
 
         <div className="mt-6 grid gap-4">
           <div className="relative">
