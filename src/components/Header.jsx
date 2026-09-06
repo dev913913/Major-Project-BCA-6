@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import DevKumarLink from './DevKumarLink';
 
 const navItem = ({ isActive }) =>
   `text-sm font-medium transition ${isActive ? 'text-indigo-600 dark:text-indigo-300' : 'text-slate-700 hover:text-indigo-600 dark:text-slate-200 dark:hover:text-indigo-300'}`;
@@ -68,18 +69,18 @@ function Header() {
   return (
     <header className={`sticky top-0 z-50 border-b border-slate-200/70 dark:border-slate-800/80 bg-white/90 dark:bg-slate-950/90 backdrop-blur transition ${scrolled ? 'shadow-sm' : ''}`}>
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-        <Link to="/" className="flex items-center gap-3 leading-tight" aria-label="Codev by Dev Kumar home">
-          <img
-            src="/brand-logo.svg"
-            alt=""
-            className="h-10 w-10 rounded-xl shadow-sm ring-1 ring-indigo-200 dark:ring-indigo-400/30"
-            aria-hidden="true"
-          />
-          <span className="flex flex-col">
+        <div className="flex items-center gap-3 leading-tight">
+          <Link to="/" className="flex items-center gap-3" aria-label="Codev home">
+            <img
+              src="/brand-logo.svg"
+              alt=""
+              className="h-10 w-10 rounded-xl shadow-sm ring-1 ring-indigo-200 dark:ring-indigo-400/30"
+              aria-hidden="true"
+            />
             <span className="text-xl font-black tracking-tight text-indigo-600 dark:text-indigo-300">Codev</span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">by Dev Kumar</span>
-          </span>
-        </Link>
+          </Link>
+          <span className="text-xs text-slate-500 dark:text-slate-400">by <DevKumarLink /></span>
+        </div>
 
         <div className="flex items-center gap-2 md:hidden">
           <ThemeToggle isDark={isDark} onToggle={toggleTheme} compact />
