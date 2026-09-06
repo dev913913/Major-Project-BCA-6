@@ -90,6 +90,8 @@ function LessonsPage() {
     });
   }, [lessons, query, activeCategory, sortBy]);
 
+  const hasActiveFilters = query.trim() || activeCategory !== 'all' || sortBy !== 'recent';
+
   function clearFilters() {
     setQuery('');
     setActiveCategory('all');
@@ -98,11 +100,14 @@ function LessonsPage() {
 
   return (
     <section className="space-y-8">
-      <header className="rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-sm">
-        <h1 className="text-4xl font-black text-slate-900 dark:text-slate-100">Explore Lessons</h1>
-        <p className="mt-2 text-slate-600 dark:text-slate-300">Curated programming lessons by Dev Kumar</p>
+      <header className="overflow-hidden rounded-3xl bg-white shadow-sm dark:bg-slate-900">
+        <div className="bg-gradient-to-r from-indigo-600 via-violet-600 to-blue-500 p-6 text-white">
+          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-indigo-100">Lesson library</p>
+          <h1 className="mt-2 text-4xl font-black">Explore Lessons</h1>
+          <p className="mt-2 max-w-2xl text-indigo-50">Search, filter, and sort Dev Kumar's programming lessons to find the next useful topic faster.</p>
+        </div>
 
-        <div className="mt-6 grid gap-4">
+        <div className="grid gap-4 p-6">
           <div className="relative">
             <span className="pointer-events-none absolute left-3 top-3 text-slate-400">🔎</span>
             <input
@@ -154,7 +159,8 @@ function LessonsPage() {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="rounded-lg border border-slate-200 dark:border-slate-800 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 transition hover:bg-slate-100"
+                disabled={!hasActiveFilters}
+                className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 Clear
               </button>
@@ -172,10 +178,17 @@ function LessonsPage() {
           ))}
         </div>
       ) : filteredLessons.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-10 text-center">
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-900">
           <p className="text-4xl" aria-hidden="true">📚</p>
           <h2 className="mt-3 text-2xl font-bold">No lessons found</h2>
-          <p className="mt-2 text-slate-500 dark:text-slate-400">Try different search or filter</p>
+          <p className="mx-auto mt-2 max-w-md text-slate-500 dark:text-slate-400">Try a shorter keyword, choose all categories, or reset sorting to see the full lesson library again.</p>
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="mt-5 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
+          >
+            Reset filters
+          </button>
         </div>
       ) : (
         <div className="grid animate-in gap-5 md:grid-cols-2 xl:grid-cols-3">
