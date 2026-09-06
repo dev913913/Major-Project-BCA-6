@@ -5,6 +5,7 @@ import LessonCard from '../components/LessonCard';
 import { JsonLd, useSeo } from '../components/Seo';
 import { fetchLessonById, fetchPublishedLessons, incrementLessonViews } from '../services/lessonService';
 import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
+import DevKumarLink, { DEV_KUMAR_PORTFOLIO_URL } from '../components/DevKumarLink';
 
 function normalizeCodeSnippets(rawSnippets) {
   if (!Array.isArray(rawSnippets)) return [];
@@ -96,7 +97,7 @@ function LessonPage() {
           '@context': 'https://schema.org',
           '@type': 'Article',
           headline: lesson.title,
-          author: { '@type': 'Person', name: 'Dev Kumar' },
+          author: { '@type': 'Person', name: 'Dev Kumar', url: DEV_KUMAR_PORTFOLIO_URL },
           datePublished: lesson.created_at,
           dateModified: lesson.updated_at,
           image: lesson.featured_image,
@@ -120,7 +121,7 @@ function LessonPage() {
             <span>📅 {new Date(lesson.created_at).toLocaleDateString()}</span>
             <span>👁 {lesson.views_count ?? 0} views</span>
             <span>🕒 {readingTime} min read</span>
-            <span>✍️ By Dev Kumar</span>
+            <span>✍️ By{' '}<DevKumarLink /></span>
           </div>
         </div>
       </header>
@@ -146,7 +147,7 @@ function LessonPage() {
           <div className="sticky top-24 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
             <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">Article info</h2>
             <ul className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
-              <li>Author: Dev Kumar</li>
+              <li>Author:{' '}<DevKumarLink /></li>
               <li>Category: {lesson.categories?.name ?? 'General'}</li>
               <li>Reading time: {readingTime} minutes</li>
             </ul>

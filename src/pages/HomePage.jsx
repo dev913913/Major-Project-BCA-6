@@ -5,6 +5,7 @@ import { JsonLd, useSeo } from '../components/Seo';
 import { fetchPublishedLessons } from '../services/lessonService';
 import { fetchCategories } from '../services/categoryService';
 import { friendlyErrorMessage, reportError } from '../utils/errorUtils';
+import DevKumarLink, { DEV_KUMAR_PORTFOLIO_URL } from '../components/DevKumarLink';
 
 function HomePage() {
   const [lessons, setLessons] = useState([]);
@@ -47,7 +48,7 @@ function HomePage() {
           '@context': 'https://schema.org',
           '@type': 'WebSite',
           name: 'Codev',
-          author: { '@type': 'Person', name: 'Dev Kumar' },
+          author: { '@type': 'Person', name: 'Dev Kumar', url: DEV_KUMAR_PORTFOLIO_URL },
           description: 'Master coding through interactive lessons and hands-on practice.',
         }}
       />
@@ -56,7 +57,7 @@ function HomePage() {
         <div className="absolute -right-20 -top-16 h-72 w-72 rounded-full bg-white/20 blur-3xl" aria-hidden="true" />
         <div className="absolute -bottom-20 left-0 h-80 w-80 rounded-full bg-cyan-300/20 blur-3xl" aria-hidden="true" />
         <div className="relative z-10 max-w-3xl space-y-6">
-          <p className="inline-flex rounded-full bg-white/20 px-4 py-1 text-sm font-medium">Created by Dev Kumar</p>
+          <p className="inline-flex items-center rounded-full bg-white/20 px-4 py-1 text-sm font-medium">Created by{' '}<DevKumarLink /></p>
           <h1 className="text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">Learn Programming with Codev</h1>
           <p className="max-w-2xl text-lg text-indigo-50">Master coding through interactive lessons and hands-on practice.</p>
           <Link to="/lessons" className="inline-block rounded-xl bg-white dark:bg-slate-900 px-6 py-3 font-semibold text-indigo-700 dark:text-indigo-200 shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl">
@@ -126,7 +127,7 @@ function HomePage() {
 
       <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-sm">
         <h2 className="text-2xl font-bold">About Codev</h2>
-        <p className="mt-3 text-slate-600 dark:text-slate-300">Codev is a modern coding education platform created by <strong>Dev Kumar</strong> to make programming approachable, practical, and inspiring for everyone.</p>
+        <p className="mt-3 text-slate-600 dark:text-slate-300">Codev is a modern coding education platform created by{' '}<strong><DevKumarLink /></strong>{' '}to make programming approachable, practical, and inspiring for everyone.</p>
       </section>
     </div>
   );
